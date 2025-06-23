@@ -107,39 +107,56 @@ def main(args):
         sum([list(Path(args.input_dir).glob(ext)) for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']], [])
     )
     print(f'num images: {len(input_image_list)}')
-
     for img_path in tqdm.tqdm(input_image_list):
         im_lr = util_image.imread(img_path, chn='rgb', dtype='float32')  # HWC float32
         im_lr = util_image.img2tensor(im_lr).cuda()                      # 1CHW float32
         im_lr = im_lr.to(memory_format=torch.contiguous_format).float()
-
+    
         ori_h, ori_w = im_lr.shape[2:]
-        im_lr_resize = F.interpolate(im_lr, size=(ori_h * config.sf, ori_w * config.sf), mode='bilinear', align_corners=False)
+        im_lr_resize = F.interpolate(
+            im_lr,
+            size=(ori_h * config.sf, ori_w * config.sf),
+            mode='bilinear',
+            align_corners=False
+        )
         im_lr_resize = torch.clamp(im_lr_resize * 2 - 1.0, -1.0, 1.0)
-
+    
         resize_h, resize_w = im_lr_resize.shape[2:]
         pad_h = (math.ceil(resize_h / 64)) * 64 - resize_h
         pad_w = (math.ceil(resize_w / 64)) * 64 - resize_w
         im_lr_resize = F.pad(im_lr_resize, pad=(0, pad_w, 0, pad_h), mode='reflect')
-
+    
         with torch.no_grad():
             deg_score = net_de(im_lr)
             B = im_lr_resize.shape[0]
             pos_tag_prompt = [args.pos_prompt] * B
             neg_tag_prompt = [args.neg_prompt] * B
-
-            x_tgt_pred = accelerator.unwrap_model(net_sr)(im_lr_resize, deg_score, pos_prompt=pos_tag_prompt, neg_prompt=neg_tag_prompt)
+    
+            x_tgt_pred = accelerator.unwrap_model(net_sr)(
+                im_lr_resize, deg_score,
+                pos_prompt=pos_tag_prompt,
+                neg_prompt=neg_tag_prompt
+            )
+    
+            # remove padding
             x_tgt_pred = x_tgt_pred[:, :, :resize_h, :resize_w]
             out_img = (x_tgt_pred * 0.5 + 0.5).cpu().detach()
-
+    
         out_pil = transforms.ToPILImage()(out_img[0])
+    
         if args.align_method != 'nofix':
-            ref_pil = transforms.ToPILImage()(im_lr_resize[0].cpu().detach())
+            # ⬇️ crop the padded input to match output size
+            ref_tensor = im_lr_resize[0, :, :resize_h, :resize_w].cpu()
+            ref_pil = transforms.ToPILImage()(ref_tensor)
+    
+            if out_pil.size != ref_pil.size:
+                ref_pil = ref_pil.resize(out_pil.size, Image.BICUBIC)
+    
             if args.align_method == 'wavelet':
                 out_pil = wavelet_color_fix(out_pil, ref_pil)
             elif args.align_method == 'adain':
                 out_pil = adain_color_fix(out_pil, ref_pil)
-
+    
         fname = img_path.stem + '_S3Diff.png'
         out_pil.save(os.path.join(args.output_dir, fname))
 
