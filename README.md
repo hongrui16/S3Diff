@@ -73,7 +73,7 @@ accelerate launch --num_processes=4 --gpu_ids="0,1,2,3" --main_process_port 2930
     --viz_freq 25
 ```
 
-## <a name="run inference on your own data"></a> 💫 
+## <a name="run inference on your own data"></a> 💫 Inference
 
 #### Step1: Download the pretrained models
 
