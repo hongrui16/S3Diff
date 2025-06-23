@@ -12,6 +12,7 @@ import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
 import transformers
+from pathlib import Path
 
 from omegaconf import OmegaConf
 from accelerate import Accelerator
@@ -38,17 +39,17 @@ if __name__ == "__main__":
     # 添加上一级路径
     parent_path = os.path.dirname(current_path)
     sys.path.append(parent_path)
+    
 import utils.misc as misc
+from utils.wavelet_color import wavelet_color_fix, adain_color_fix
+from utils import util_image
+from utils.util_image import ImageSpliterTh
 
 
 from de_net import DEResNet
 from s3diff_tile import S3Diff
 from my_utils.testing_utils import parse_args_paired_testing, PlainDataset, lr_proc
-from utils.util_image import ImageSpliterTh
 from my_utils.utils import instantiate_from_config
-from pathlib import Path
-from utils import util_image
-from utils.wavelet_color import wavelet_color_fix, adain_color_fix
 
 
 def main(args):
