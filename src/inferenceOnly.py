@@ -143,3 +143,6 @@ def main(args):
     gc.collect()
     torch.cuda.empty_cache()
 
+if __name__ == "__main__":
+    args = parse_args_paired_testing()
+    main(args)
