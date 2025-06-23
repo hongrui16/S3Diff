@@ -17,17 +17,6 @@
 :star: If S3Diff is helpful for you, please help star this repo. Thanks! :hugs:
 
 
-## :book: Table Of Contents
-
-- [Update](#update)
-- [TODO](#todo)
-- [Abstract](#abstract)
-- [Framework Overview](#framework_overview)
-- [Visual Comparison](#visual_comparison)
-- [Setup](#setup)
-- [Training](#training)
-- [Inference](#inference)
-
 
 ## <a name="setup"></a> ⚙️ Setup
 ```bash
