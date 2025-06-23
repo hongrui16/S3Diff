@@ -30,7 +30,7 @@ from diffusers.optimization import get_scheduler
 import sys
 
 
-from utils.misc import misc
+from utils import misc as misc
 from utils.wavelet_color import wavelet_color_fix, adain_color_fix
 from utils import util_image
 from utils.util_image import ImageSpliterTh
