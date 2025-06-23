@@ -43,31 +43,6 @@
 - [x] Release Code :computer:
 - [x] Release Checkpoints :link:
 
-## <a name="abstract"></a>:fireworks: Abstract
-
-> Diffusion-based image super-resolution (SR) methods have achieved remarkable success by leveraging large pre-trained text-to-image diffusion models as priors. However, these methods still face two challenges: the requirement for dozens of sampling steps to achieve satisfactory results, which limits efficiency in real scenarios, and the neglect of degradation models, which are critical auxiliary information in solving the SR problem. In this work, we introduced a novel one-step SR model, which significantly addresses the efficiency issue of diffusion-based SR methods. Unlike existing fine-tuning strategies, we designed a degradation-guided Low-Rank Adaptation (LoRA) module specifically for SR, which corrects the model parameters based on the pre-estimated degradation information from low-resolution images. This module not only facilitates a powerful data-dependent or degradation-dependent SR model but also preserves the generative prior of the pre-trained diffusion model as much as possible. Furthermore, we tailor a novel training pipeline by introducing an online negative sample generation strategy. Combined with the classifier-free guidance strategy during inference, it largely improves the perceptual quality of the super-resolution results. Extensive experiments have demonstrated the superior efficiency and effectiveness of the proposed model compared to recent state-of-the-art methods.
-
-## <a name="framework_overview"></a>:eyes: Framework Overview
-
-<img src=assets/pic/main_framework.jpg>
-
-:star: Overview of S3Diff. We enhance a pre-trained diffusion model for one-step SR by injecting LoRA layers into the VAE encoder and UNet. Additionally, we employ a pre-trained Degradation Estimation Network to assess image degradation that is used to guide the LoRAs with the introduced block ID embeddings. We tailor a new training pipeline that includes an online negative prompting, reusing generated LR images with negative text prompts. The network is trained with a combination of a reconstruction loss and a GAN loss.
-
-## <a name="visual_comparison"></a>:chart_with_upwards_trend: Visual Comparison
-
-### Image Slide Results
-[<img src="assets/pic/imgsli1.png" height="235px"/>](https://imgsli.com/MzAzNjIy) [<img src="assets/pic/imgsli2.png" height="235px"/>](https://imgsli.com/MzAzNjQ1)  [<img src="assets/pic/imgsli3.png" height="235px"/>](https://imgsli.com/MzAzNjU4)
-[<img src="assets/pic/imgsli4.png" height="272px"/>](https://imgsli.com/MzAzNjU5) [<img src="assets/pic/imgsli5.png" height="272px"/>](https://imgsli.com/MzAzNjI2)
-### Synthesis Dataset
-
-<img src=assets/pic/div2k_comparison.jpg>
-
-### Real-World Dataset
-
-<img src=assets/pic/london2.jpg>
-<img src=assets/pic/realsr_vis3.jpg>
-
-<!-- </details> -->
 
 ## <a name="setup"></a> ⚙️ Setup
 ```bash
@@ -155,6 +130,32 @@ Please run the following command to interact with the gradio website, have fun. 
 python src/gradio_s3diff.py 
 ```
 ![s3diff](assets/pic/gradio.png)
+
+## <a name="abstract"></a>:fireworks: Abstract
+
+> Diffusion-based image super-resolution (SR) methods have achieved remarkable success by leveraging large pre-trained text-to-image diffusion models as priors. However, these methods still face two challenges: the requirement for dozens of sampling steps to achieve satisfactory results, which limits efficiency in real scenarios, and the neglect of degradation models, which are critical auxiliary information in solving the SR problem. In this work, we introduced a novel one-step SR model, which significantly addresses the efficiency issue of diffusion-based SR methods. Unlike existing fine-tuning strategies, we designed a degradation-guided Low-Rank Adaptation (LoRA) module specifically for SR, which corrects the model parameters based on the pre-estimated degradation information from low-resolution images. This module not only facilitates a powerful data-dependent or degradation-dependent SR model but also preserves the generative prior of the pre-trained diffusion model as much as possible. Furthermore, we tailor a novel training pipeline by introducing an online negative sample generation strategy. Combined with the classifier-free guidance strategy during inference, it largely improves the perceptual quality of the super-resolution results. Extensive experiments have demonstrated the superior efficiency and effectiveness of the proposed model compared to recent state-of-the-art methods.
+
+## <a name="framework_overview"></a>:eyes: Framework Overview
+
+<img src=assets/pic/main_framework.jpg>
+
+:star: Overview of S3Diff. We enhance a pre-trained diffusion model for one-step SR by injecting LoRA layers into the VAE encoder and UNet. Additionally, we employ a pre-trained Degradation Estimation Network to assess image degradation that is used to guide the LoRAs with the introduced block ID embeddings. We tailor a new training pipeline that includes an online negative prompting, reusing generated LR images with negative text prompts. The network is trained with a combination of a reconstruction loss and a GAN loss.
+
+## <a name="visual_comparison"></a>:chart_with_upwards_trend: Visual Comparison
+
+### Image Slide Results
+[<img src="assets/pic/imgsli1.png" height="235px"/>](https://imgsli.com/MzAzNjIy) [<img src="assets/pic/imgsli2.png" height="235px"/>](https://imgsli.com/MzAzNjQ1)  [<img src="assets/pic/imgsli3.png" height="235px"/>](https://imgsli.com/MzAzNjU4)
+[<img src="assets/pic/imgsli4.png" height="272px"/>](https://imgsli.com/MzAzNjU5) [<img src="assets/pic/imgsli5.png" height="272px"/>](https://imgsli.com/MzAzNjI2)
+### Synthesis Dataset
+
+<img src=assets/pic/div2k_comparison.jpg>
+
+### Real-World Dataset
+
+<img src=assets/pic/london2.jpg>
+<img src=assets/pic/realsr_vis3.jpg>
+
+<!-- </details> -->
 
 ## :smiley: Citation
 
