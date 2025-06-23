@@ -9,7 +9,7 @@ tokenizers
 
 torch==2.1.0
 torchaudio==2.1.0
-torchdata==0.6.1
+torchdata
 torchmetrics>=1.0.1
 torchvision==0.16.0
 
