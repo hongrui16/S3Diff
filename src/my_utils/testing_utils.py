@@ -36,6 +36,9 @@ def parse_args_paired_testing(input_args=None):
     argparse.Namespace: The parsed command-line arguments.
    """
     parser = argparse.ArgumentParser()
+    
+    parser.add_argument("--input_dir", type=str, default=None,)
+
     parser.add_argument("--ref_path", type=str, default=None,)
     parser.add_argument("--base_config", default="./configs/sr_test.yaml", type=str)
     parser.add_argument("--tracker_project_name", type=str, default="train_pix2pix_turbo", help="The name of the wandb project to log to.")
