@@ -67,6 +67,7 @@ accelerate launch --num_processes=4 --gpu_ids="0,1,2,3" --main_process_port 2930
 #### Step1: Download the pretrained models
 
 We enable automatic model download in our code, if you need to conduct offline inference, download the pretrained model [SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) and S3Diff [[HuggingFace](https://huggingface.co/zhangap/S3Diff) | [GoogleDrive](https://drive.google.com/drive/folders/1cWYQYRFpadC4K2GuH8peg_hWEoFddZtj?usp=sharing)]
+
 Download 'de_net.pth' and 's3diff.pkl', and put them into 'checkpoints' folder
 
 #### Step2: Inference on your own test data.
@@ -84,6 +85,7 @@ Run evaluation for S3Diff on a SR benchmark.
 #### Step1: Download the pretrained models
 
 We enable automatic model download in our code, if you need to conduct offline inference, download the pretrained model [SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) and S3Diff [[HuggingFace](https://huggingface.co/zhangap/S3Diff) | [GoogleDrive](https://drive.google.com/drive/folders/1cWYQYRFpadC4K2GuH8peg_hWEoFddZtj?usp=sharing)]
+
 Download 'de_net.pth' and 's3diff.pkl', and put them into 'checkpoints' folder
 
 #### Step2: Download datasets for inference and run
