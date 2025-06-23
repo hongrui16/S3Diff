@@ -80,6 +80,7 @@ Download 'de_net.pth' and 's3diff.pkl', and put them into 'checkpoints' folder
     --input_dir="ls_images" \
 ```
 ## <a name="run evaluation for S3Diff"></a> 💫 Evaluation
+Run evaluation for S3Diff on a SR benchmark.
 #### Step1: Download the pretrained models
 
 We enable automatic model download in our code, if you need to conduct offline inference, download the pretrained model [SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) and S3Diff [[HuggingFace](https://huggingface.co/zhangap/S3Diff) | [GoogleDrive](https://drive.google.com/drive/folders/1cWYQYRFpadC4K2GuH8peg_hWEoFddZtj?usp=sharing)]
