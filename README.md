@@ -28,21 +28,6 @@
 - [Training](#training)
 - [Inference](#inference)
 
-<!-- - [Installation](#installation)
-- [Inference](#inference) -->
-
-## <a name="update"></a>:new: Update
-
-- **2024.10.07**: Add gradio demo 🚀
-- **2024.09.25**: The code is released :fire:
-- **2024.09.25**: This repo is released :fire:
-<!-- - [**History Updates** >]() -->
-
-## <a name="todo"></a>:hourglass: TODO
-
-- [x] Release Code :computer:
-- [x] Release Checkpoints :link:
-
 
 ## <a name="setup"></a> ⚙️ Setup
 ```bash
@@ -130,6 +115,23 @@ Please run the following command to interact with the gradio website, have fun. 
 python src/gradio_s3diff.py 
 ```
 ![s3diff](assets/pic/gradio.png)
+
+
+<!-- - [Installation](#installation)
+- [Inference](#inference) -->
+
+## <a name="update"></a>:new: Update
+
+- **2024.10.07**: Add gradio demo 🚀
+- **2024.09.25**: The code is released :fire:
+- **2024.09.25**: This repo is released :fire:
+<!-- - [**History Updates** >]() -->
+
+## <a name="todo"></a>:hourglass: TODO
+
+- [x] Release Code :computer:
+- [x] Release Checkpoints :link:
+
 
 ## <a name="abstract"></a>:fireworks: Abstract
 
