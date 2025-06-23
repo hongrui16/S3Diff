@@ -21,10 +21,25 @@ from torchvision import transforms
 # from tqdm.auto import tqdm
 
 import diffusers
-import utils.misc as misc
 
 from diffusers.utils.import_utils import is_xformers_available
 from diffusers.optimization import get_scheduler
+
+
+import sys
+
+if __name__ == "__main__":
+    # 当前文件的绝对路径
+    current_path = os.path.dirname(os.path.abspath(__file__))
+
+    # 添加当前路径
+    sys.path.append(current_path)
+
+    # 添加上一级路径
+    parent_path = os.path.dirname(current_path)
+    sys.path.append(parent_path)
+import utils.misc as misc
+
 
 from de_net import DEResNet
 from s3diff_tile import S3Diff
