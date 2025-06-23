@@ -135,18 +135,18 @@ def main(args):
     
         out_pil = transforms.ToPILImage()(out_img[0])
     
-        if args.align_method != 'nofix':
-            # ⬇️ crop the padded input to match output size
-            ref_tensor = im_lr_resize[0, :, :resize_h, :resize_w].cpu()
-            ref_pil = transforms.ToPILImage()(ref_tensor)
+        # if args.align_method != 'nofix':
+        #     # ⬇️ crop the padded input to match output size
+        #     ref_tensor = im_lr_resize[0, :, :resize_h, :resize_w].cpu()
+        #     ref_pil = transforms.ToPILImage()(ref_tensor)
     
-            if out_pil.size != ref_pil.size:
-                ref_pil = ref_pil.resize(out_pil.size, Image.BICUBIC)
+        #     if out_pil.size != ref_pil.size:
+        #         ref_pil = ref_pil.resize(out_pil.size, Image.BICUBIC)
     
-            if args.align_method == 'wavelet':
-                out_pil = wavelet_color_fix(out_pil, ref_pil)
-            elif args.align_method == 'adain':
-                out_pil = adain_color_fix(out_pil, ref_pil)
+        #     if args.align_method == 'wavelet':
+        #         out_pil = wavelet_color_fix(out_pil, ref_pil)
+        #     elif args.align_method == 'adain':
+        #         out_pil = adain_color_fix(out_pil, ref_pil)
     
         fname = img_path.stem + '_S3Diff.png'
         out_pil.save(os.path.join(args.output_dir, fname))
