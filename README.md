@@ -73,15 +73,30 @@ accelerate launch --num_processes=4 --gpu_ids="0,1,2,3" --main_process_port 2930
     --viz_freq 25
 ```
 
-## <a name="inference"></a> 💫 Inference
+## <a name="run inference on your own data"></a> 💫 
 
-#### Step1: Download datasets for inference
-
-#### Step2: Download the pretrained models
+#### Step1: Download the pretrained models
 
 We enable automatic model download in our code, if you need to conduct offline inference, download the pretrained model [SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) and S3Diff [[HuggingFace](https://huggingface.co/zhangap/S3Diff) | [GoogleDrive](https://drive.google.com/drive/folders/1cWYQYRFpadC4K2GuH8peg_hWEoFddZtj?usp=sharing)]
+Download 'de_net.pth' and 's3diff.pkl', and put them into 'checkpoints' folder
 
-#### Step3: Inference for S3Diff
+#### Step2: Inference on your own test data.
+
+```
+!python inferenceOnly.py \
+    --sd_path="stabilityai/sd-turbo" \
+    --de_net_path="checkpoints/de_net.pth" \
+    --pretrained_path="checkpoints/s3diff.pkl" \
+    --output_dir="S3Diffx4" \
+    --input_dir="ls_images" \
+```
+## <a name="run evaluation for S3Diff"></a> 💫 Evaluation
+#### Step1: Download the pretrained models
+
+We enable automatic model download in our code, if you need to conduct offline inference, download the pretrained model [SD-Turbo](https://huggingface.co/stabilityai/sd-turbo) and S3Diff [[HuggingFace](https://huggingface.co/zhangap/S3Diff) | [GoogleDrive](https://drive.google.com/drive/folders/1cWYQYRFpadC4K2GuH8peg_hWEoFddZtj?usp=sharing)]
+Download 'de_net.pth' and 's3diff.pkl', and put them into 'checkpoints' folder
+
+#### Step2: Download datasets for inference and run
 
 Please add the paths to evaluate datasets in `configs/sr_test.yaml` and the path of GT folder in `run_inference.sh`
 Then run:
