@@ -103,7 +103,10 @@ def main(args):
     net_sr.to(accelerator.device, dtype=weight_dtype)
     net_de.to(accelerator.device, dtype=weight_dtype)
 
-    input_image_list = sorted(Path(args.input_dir).glob("*.[jpJP][pnPN]*[gG]"))
+    input_image_list = sorted(
+        sum([list(Path(args.input_dir).glob(ext)) for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']], [])
+    )
+    print(f'num images: {len(input_image_list)}')
 
     for img_path in tqdm.tqdm(input_image_list):
         im_lr = util_image.imread(img_path, chn='rgb', dtype='float32')  # HWC float32
