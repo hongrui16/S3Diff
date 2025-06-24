@@ -299,12 +299,12 @@ class S3Diff(torch.nn.Module):
         _, _, h, w = lq_latent.size()
         tile_size, tile_overlap = (self.latent_tiled_size, self.latent_tiled_overlap)
         if h * w <= tile_size * tile_size:
-            print(f"[Tiled Latent]: the input size is tiny and unnecessary to tile.")
+            # print(f"[Tiled Latent]: the input size is tiny and unnecessary to tile.")
             pos_model_pred = self.unet(lq_latent, self.timesteps, encoder_hidden_states=pos_caption_enc).sample
             neg_model_pred = self.unet(lq_latent, self.timesteps, encoder_hidden_states=neg_caption_enc).sample
             model_pred = neg_model_pred + self.guidance_scale * (pos_model_pred - neg_model_pred)
         else:
-            print(f"[Tiled Latent]: the input size is {c_t.shape[-2]}x{c_t.shape[-1]}, need to tiled")
+            # print(f"[Tiled Latent]: the input size is {c_t.shape[-2]}x{c_t.shape[-1]}, need to tiled")
             # tile_weights = self._gaussian_weights(tile_size, tile_size, 1).to()
             tile_size = min(tile_size, min(h, w))
             tile_weights = self._gaussian_weights(tile_size, tile_size, 1).to(c_t.device)
