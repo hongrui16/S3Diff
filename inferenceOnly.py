@@ -89,8 +89,15 @@ def main(args):
         torch.backends.cuda.matmul.allow_tf32 = True
 
     net_sr, net_de = accelerator.prepare(net_sr, net_de)
-    weight_dtype = torch.float32 if accelerator.mixed_precision == "no" else getattr(torch, accelerator.mixed_precision)
+        
+    if accelerator.mixed_precision == "fp16":
+        weight_dtype = torch.float16
+    elif accelerator.mixed_precision == "bf16":
+        weight_dtype = torch.bfloat16
+    else:
+        weight_dtype = torch.float32
 
+    
     net_sr.to(accelerator.device, dtype=weight_dtype)
     net_de.to(accelerator.device, dtype=weight_dtype)
 
