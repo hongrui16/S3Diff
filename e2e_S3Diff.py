@@ -418,6 +418,7 @@ class S3Diff_network(torch.nn.Module):
 
         output_image = (self.vae.decode(x_denoised / self.vae.config.scaling_factor).sample).clamp(-1, 1)
 
+        print(f"min: {output_image.min()}, max: {output_image.max()}")
         return output_image
 
 
