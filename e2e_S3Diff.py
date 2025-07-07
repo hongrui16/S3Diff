@@ -315,14 +315,14 @@ class S3Diff_network(torch.nn.Module):
         neg_prompt_enc = self.neg_prompt_enc.unsqueeze(0).expand(B, -1, -1).to(device)
         pos_prompt_enc = self.pos_prompt_enc.unsqueeze(0).expand(B, -1, -1).to(device)
         
-        
+        im_lr_resize = torch.clamp(im_lr*2 -1.0, -1.0, 1.0)
 
 
-        deg_score = self.deres_net(im_lr)
+        deg_score = self.deres_net(im_lr_resize)
         # ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
 
         # im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
-        im_lr_resize = torch.clamp(im_lr*2 -1.0, -1.0, 1.0)
+        
         
 
         # degradation fourier embedding
