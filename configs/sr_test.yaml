@@ -1,4 +1,4 @@
-sf: 4
+sf: 1
 
 validation:
   lr_path: path_to_LR_image_folder

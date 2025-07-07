@@ -101,9 +101,14 @@ def main(args):
     net_sr.to(accelerator.device, dtype=weight_dtype)
     net_de.to(accelerator.device, dtype=weight_dtype)
 
-    input_image_list = sorted(
-        sum([list(Path(args.input_dir).glob(ext)) for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']], [])
-    )
+    if not args.input_dir is None:
+        input_image_list = sorted(
+            sum([list(Path(args.input_dir).glob(ext)) for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']], [])
+        )
+    elif not args.input_img_path is None:
+        input_image_list = [Path(args.input_img_path)]
+    else:
+        raise ValueError("Please provide either --input_dir or --input_img_path.")
     print(f'num images: {len(input_image_list)}')
     for img_path in tqdm.tqdm(input_image_list):
         im_lr = util_image.imread(img_path, chn='rgb', dtype='float32')  # HWC float32
@@ -111,13 +116,15 @@ def main(args):
         im_lr = im_lr.to(memory_format=torch.contiguous_format).float()
     
         ori_h, ori_w = im_lr.shape[2:]
-        im_lr_resize = F.interpolate(
-            im_lr,
-            size=(ori_h * config.sf, ori_w * config.sf),
-            mode='bilinear',
-            align_corners=False
-        )
-        im_lr_resize = torch.clamp(im_lr_resize * 2 - 1.0, -1.0, 1.0)
+        if config.sf != 1:
+            im_lr = F.interpolate(
+                im_lr,
+                size=(ori_h // config.sf, ori_w // config.sf),
+                mode='bilinear',
+                align_corners=False
+            )
+        else:
+            im_lr_resize = torch.clamp(im_lr * 2 - 1.0, -1.0, 1.0)
     
         resize_h, resize_w = im_lr_resize.shape[2:]
         pad_h = (math.ceil(resize_h / 64)) * 64 - resize_h
