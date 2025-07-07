@@ -67,7 +67,7 @@ class S3Diff_network(torch.nn.Module):
         self.num_inference_steps = 1
         beta_start = 0.0001
         beta_end = 0.02
-        self.enlarge_ratio = 2
+        self.enlarge_ratio = 1
 
         
         pos_prompt = "A high-resolution, 8K, ultra-realistic image with sharp focus, vibrant colors, and natural lighting."
@@ -102,8 +102,11 @@ class S3Diff_network(torch.nn.Module):
         self.timesteps = torch.tensor([999]).long().to(device)
         ###########--------------scheduling end----------------->>>>>>>>>>>>
 
-
-        pretrained_ckpt = torch.load(pretrained_path, map_location='cpu')
+        if os.path.exists(pretrained_path):
+            pretrained_ckpt = torch.load(pretrained_path, map_location='cpu')
+        else:
+            pretrained_ckpt = {}
+        
 
         if "pos_prompt_enc" in pretrained_ckpt and "neg_prompt_enc" in pretrained_ckpt:
             self.register_buffer("pos_prompt_enc", pretrained_ckpt["pos_prompt_enc"])
@@ -133,9 +136,6 @@ class S3Diff_network(torch.nn.Module):
         else:
             raise ValueError("pos_prompt and neg_prompt must be strings or precomputed encodings.")
         
-
-        self.tokenizer = AutoTokenizer.from_pretrained(sd_path, subfolder="tokenizer")
-        self.text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder").cuda()
 
         self.guidance_scale = 1.07
 
@@ -296,38 +296,39 @@ class S3Diff_network(torch.nn.Module):
         self.text_encoder.requires_grad_(False)
         self.deres_net.requires_grad_(False)
 
-    def set_train(self):
-        self.unet.train()
-        self.vae.train()
-        self.vae_de_mlp.train()
-        self.unet_de_mlp.train()
-        self.vae_block_mlp.train()
-        self.unet_block_mlp.train()
-        self.vae_fuse_mlp.train()
-        self.unet_fuse_mlp.train()    
+    # def set_train(self):
+    #     self.unet.train()
+    #     self.vae.train()
+    #     self.vae_de_mlp.train()
+    #     self.unet_de_mlp.train()
+    #     self.vae_block_mlp.train()
+    #     self.unet_block_mlp.train()
+    #     self.vae_fuse_mlp.train()
+    #     self.unet_fuse_mlp.train()    
 
-        self.vae_block_embeddings.requires_grad_(True)
-        self.unet_block_embeddings.requires_grad_(True)
+    #     self.vae_block_embeddings.requires_grad_(True)
+    #     self.unet_block_embeddings.requires_grad_(True)
 
-        for n, _p in self.unet.named_parameters():
-            if "lora" in n:
-                _p.requires_grad = True
-        self.unet.conv_in.requires_grad_(True)
+    #     for n, _p in self.unet.named_parameters():
+    #         if "lora" in n:
+    #             _p.requires_grad = True
+    #     self.unet.conv_in.requires_grad_(True)
 
-        for n, _p in self.vae.named_parameters():
-            if "lora" in n:
-                _p.requires_grad = True
+    #     for n, _p in self.vae.named_parameters():
+    #         if "lora" in n:
+    #             _p.requires_grad = True
 
     @perfcount
     @torch.no_grad()
     def forward(self, im_lr):
+        ### im_lr: [B, 3, 256, 256]
         B = im_lr.shape[0]
         device = im_lr.device
         
         ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
 
-        im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
-        
+        # im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
+        im_lr_resize = im_lr 
         im_lr_resize = torch.clamp(im_lr_resize*2 -1.0, -1.0, 1.0)
         deg_score = self.deres_net(im_lr_resize)
 
@@ -493,10 +494,10 @@ class S3Diff_network(torch.nn.Module):
                     "state_dict_unet_block": self.unet_block_embeddings.state_dict(),
                 }
         sd['betas'] = self.betas
-        sd['alphas'] = self.alphas
-        sd['alphas_cumprod'] = self.alphas_cumprod
-        sd['final_alpha_cumprod'] = self.final_alpha_cumprod
-        sd['timesteps'] = self.timesteps
+        # sd['alphas'] = self.alphas
+        # sd['alphas_cumprod'] = self.alphas_cumprod
+        # sd['final_alpha_cumprod'] = self.final_alpha_cumprod
+        # sd['timesteps'] = self.timesteps
         sd['pos_prompt_enc'] = self.pos_prompt_enc
         sd['neg_prompt_enc'] = self.neg_prompt_enc
 
