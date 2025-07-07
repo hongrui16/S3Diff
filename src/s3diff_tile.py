@@ -51,7 +51,7 @@ class S3Diff(torch.nn.Module):
 
         self.tokenizer = AutoTokenizer.from_pretrained(sd_path, subfolder="tokenizer")
         self.text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder").to(device)
-        self.sched = make_1step_sched(sd_path)
+        self.sched = make_1step_sched(sd_path, device=device)
         self.guidance_scale = 1.07
 
         vae = AutoencoderKL.from_pretrained(sd_path, subfolder="vae")

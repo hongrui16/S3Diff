@@ -12,10 +12,10 @@ from typing import Any, Optional, Union
     # return noise_scheduler_1step
 
 
-def make_1step_sched(pretrained_path):
+def make_1step_sched(pretrained_path, device = 'cpu'):
     noise_scheduler_1step = DDPMScheduler.from_pretrained(pretrained_path, subfolder="scheduler")
-    noise_scheduler_1step.set_timesteps(1, device="cuda")
-    noise_scheduler_1step.alphas_cumprod = noise_scheduler_1step.alphas_cumprod.cuda()
+    noise_scheduler_1step.set_timesteps(1, device=device)
+    noise_scheduler_1step.alphas_cumprod = noise_scheduler_1step.alphas_cumprod.to(device)
     return noise_scheduler_1step
 
 

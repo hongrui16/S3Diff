@@ -57,6 +57,7 @@ def main(args):
     else:
         sd_path = args.sd_path
 
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     accelerator = Accelerator(
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         mixed_precision=args.mixed_precision,
@@ -66,14 +67,18 @@ def main(args):
     if args.seed is not None:
         set_seed(args.seed)
 
+    
     os.makedirs(args.output_dir, exist_ok=True)
 
-    net_sr = S3Diff(lora_rank_unet=args.lora_rank_unet, lora_rank_vae=args.lora_rank_vae, sd_path=sd_path, pretrained_path=pretrained_path, args=args)
+    net_sr = S3Diff(lora_rank_unet=args.lora_rank_unet, lora_rank_vae=args.lora_rank_vae,
+                     sd_path=sd_path, pretrained_path=pretrained_path, args=args,
+                     device = device,
+                     )
     net_sr.set_eval()
 
     net_de = DEResNet(num_in_ch=3, num_degradation=2)
     net_de.load_model(args.de_net_path)
-    net_de = net_de.cuda()
+    net_de = net_de.to(device)
     net_de.eval()
 
     if args.enable_xformers_memory_efficient_attention:
@@ -85,7 +90,7 @@ def main(args):
     if args.gradient_checkpointing:
         net_sr.unet.enable_gradient_checkpointing()
 
-    if args.allow_tf32:
+    if args.allow_tf32 and torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True
 
     net_sr, net_de = accelerator.prepare(net_sr, net_de)
@@ -166,7 +171,8 @@ def main(args):
         out_pil.save(os.path.join(args.output_dir, fname))
 
     gc.collect()
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 if __name__ == "__main__":
     args = parse_args_paired_testing()
