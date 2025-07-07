@@ -330,7 +330,7 @@ class S3Diff_network(torch.nn.Module):
 
         self.unet.requires_grad_(False)
         self.vae.requires_grad_(False)
-        self.text_encoder.requires_grad_(False)
+        # self.text_encoder.requires_grad_(False)
         self.deres_net.requires_grad_(False)
 
     def forward(self, im_lr):
