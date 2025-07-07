@@ -275,7 +275,8 @@ class S3Diff_network(torch.nn.Module):
         self.set_eval()
         all_weights_path = 's3diff_all.pt'
         if not os.path.exists(all_weights_path):
-            self.save_model(all_weights_path)
+            ## save all weights
+            torch.save(self.state_dict(), all_weights_path)
 
 
     def set_eval(self):
@@ -295,28 +296,6 @@ class S3Diff_network(torch.nn.Module):
         self.vae.requires_grad_(False)
         self.text_encoder.requires_grad_(False)
         self.deres_net.requires_grad_(False)
-
-    # def set_train(self):
-    #     self.unet.train()
-    #     self.vae.train()
-    #     self.vae_de_mlp.train()
-    #     self.unet_de_mlp.train()
-    #     self.vae_block_mlp.train()
-    #     self.unet_block_mlp.train()
-    #     self.vae_fuse_mlp.train()
-    #     self.unet_fuse_mlp.train()    
-
-    #     self.vae_block_embeddings.requires_grad_(True)
-    #     self.unet_block_embeddings.requires_grad_(True)
-
-    #     for n, _p in self.unet.named_parameters():
-    #         if "lora" in n:
-    #             _p.requires_grad = True
-    #     self.unet.conv_in.requires_grad_(True)
-
-    #     for n, _p in self.vae.named_parameters():
-    #         if "lora" in n:
-    #             _p.requires_grad = True
 
     @perfcount
     @torch.no_grad()
