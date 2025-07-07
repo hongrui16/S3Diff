@@ -130,7 +130,9 @@ def main(args):
             )
         else:
             im_lr_resize = torch.clamp(im_lr * 2 - 1.0, -1.0, 1.0)
-    
+
+        im_lr_resize = im_lr_resize.to(weight_dtype)
+
         resize_h, resize_w = im_lr_resize.shape[2:]
         pad_h = (math.ceil(resize_h / 64)) * 64 - resize_h
         pad_w = (math.ceil(resize_w / 64)) * 64 - resize_w
