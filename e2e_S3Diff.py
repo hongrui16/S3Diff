@@ -46,8 +46,8 @@ class S3Diff_network(torch.nn.Module):
     def __init__(self, pretrained_path = None, de_net_path = None, sd_path = './sd_turbo', 
                  lora_rank_unet = 32, lora_rank_vae = 16, block_embedding_dim = 64,
                 num_train_timesteps: int = 1000,
-                beta_start: float = 0.0001,
-                beta_end: float = 0.02,
+                beta_start: float = 0.00085,
+                beta_end: float = 0.012,
                 clip_sample_range: float = 1.0,
                 device = 'cpu',
                    **kwargs):
@@ -84,8 +84,7 @@ class S3Diff_network(torch.nn.Module):
         self.clip_sample_range = clip_sample_range
 
 
-        self.betas = torch.linspace(beta_start, beta_end, num_train_timesteps, dtype=torch.float32, device = device)
-
+        self.betas = torch.linspace(beta_start**0.5, beta_end**0.5, num_train_timesteps, dtype=torch.float32) ** 2
 
         self.alphas = 1.0 - self.betas
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
@@ -604,9 +603,9 @@ class S3Diff_network(torch.nn.Module):
         pred_original_sample = (sample - beta_prod_t ** (0.5) * model_output) / alpha_prod_t ** (0.5) ## prediction_type == "epsilon"
 
         # 3. Clip or threshold "predicted x_0"
-        pred_original_sample = pred_original_sample.clamp(
-            -self.clip_sample_range, self.clip_sample_range
-        )
+        # pred_original_sample = pred_original_sample.clamp(
+        #     -self.clip_sample_range, self.clip_sample_range
+        # )
 
         # 4. Compute coefficients for pred_original_sample x_0 and current sample x_t
         # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
