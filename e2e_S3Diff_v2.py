@@ -119,10 +119,7 @@ class S3Diff_network(torch.nn.Module):
                    **kwargs):
         super().__init__()
 
-        self.latent_tiled_size = 96
-        self.latent_tiled_overlap = 32
-        self.vae_decoder_tiled_size = 224
-        self.vae_encoder_tiled_size = 1024
+
 
         self.prediction_type = "epsilon"
         self.clip_sample = True
@@ -350,7 +347,7 @@ class S3Diff_network(torch.nn.Module):
     def forward(self, im_lr):
         '''
         
-        Args:            im_lr: [1, 3, 256, 256], 0~1.0
+        Args:            im_lr: [1, 3, 256, 256], 0~1.0, the input size is up to 768x768 without titling.
         Returns:         output_image: [1, 3, 256, 256], 0~1.0
         '''
         B = im_lr.shape[0]
