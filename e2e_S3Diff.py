@@ -41,6 +41,28 @@ def get_layer_number(module_name):
     final_layer = base_layer + additional_layers
     return final_layer
 
+def tokenize_prompts(sd_path):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    tokenizer = AutoTokenizer.from_pretrained(sd_path, subfolder="tokenizer")
+    text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder").to(device)
+    text_encoder.eval()
+
+    pos_prompt = "A high-resolution, 8K, ultra-realistic image with sharp focus, vibrant colors, and natural lighting."
+    neg_prompt = "oil painting, cartoon, blur, dirty, messy, low quality, deformation, low resolution, oversmooth"
+
+    pos_ids = tokenizer(pos_prompt, max_length=tokenizer.model_max_length,
+                        padding="max_length", truncation=True, return_tensors="pt").input_ids.to(device)
+    neg_ids = tokenizer(neg_prompt, max_length=tokenizer.model_max_length,
+                        padding="max_length", truncation=True, return_tensors="pt").input_ids.to(device)
+
+    with torch.no_grad():
+        pos_prompt_enc = text_encoder(pos_ids)[0].squeeze(0).cpu()
+        neg_prompt_enc = text_encoder(neg_ids)[0].squeeze(0).cpu()
+
+    # 保存到 checkpoint 中（或保存为单独 .pt）
+    torch.save({'pos_prompt_enc': pos_prompt_enc, 'neg_prompt_enc': neg_prompt_enc}, 'prompt_encodings.pt')
+
 
 class S3Diff_network(torch.nn.Module):
     def __init__(self, pretrained_path = None, de_net_path = None, sd_path = './sd_turbo', 
@@ -70,8 +92,8 @@ class S3Diff_network(torch.nn.Module):
         self.enlarge_ratio = 1
 
         
-        pos_prompt = "A high-resolution, 8K, ultra-realistic image with sharp focus, vibrant colors, and natural lighting."
-        neg_prompt = "oil painting, cartoon, blur, dirty, messy, low quality, deformation, low resolution, oversmooth"
+        # pos_prompt = "A high-resolution, 8K, ultra-realistic image with sharp focus, vibrant colors, and natural lighting."
+        # neg_prompt = "oil painting, cartoon, blur, dirty, messy, low quality, deformation, low resolution, oversmooth"
 
 
 
@@ -90,6 +112,10 @@ class S3Diff_network(torch.nn.Module):
         self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
         self.one = torch.tensor(1.0, device= device)
 
+        self.register_buffer("betas", self.betas)
+        self.register_buffer("alphas", self.alphas)
+        self.register_buffer("alphas_cumprod", self.alphas_cumprod)
+        self.register_buffer("one", self.one)
 
         # standard deviation of the initial noise distribution
         self.init_noise_sigma = 1.0
@@ -114,33 +140,37 @@ class S3Diff_network(torch.nn.Module):
             pretrained_ckpt = {}
         
 
-        if "pos_prompt_enc" in pretrained_ckpt and "neg_prompt_enc" in pretrained_ckpt:
-            self.register_buffer("pos_prompt_enc", pretrained_ckpt["pos_prompt_enc"])
-            self.register_buffer("neg_prompt_enc", pretrained_ckpt["neg_prompt_enc"])
+        # if "pos_prompt_enc" in pretrained_ckpt and "neg_prompt_enc" in pretrained_ckpt:
+        #     self.register_buffer("pos_prompt_enc", pretrained_ckpt["pos_prompt_enc"])
+        #     self.register_buffer("neg_prompt_enc", pretrained_ckpt["neg_prompt_enc"])
 
-        elif isinstance(pos_prompt, str) and isinstance(neg_prompt, str):
-            self.tokenizer = AutoTokenizer.from_pretrained(sd_path, subfolder="tokenizer")
-            self.text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder")
-            self.text_encoder.eval()
-            self.text_encoder.to(device)
+        # elif isinstance(pos_prompt, str) and isinstance(neg_prompt, str):
+        #     self.tokenizer = AutoTokenizer.from_pretrained(sd_path, subfolder="tokenizer")
+        #     self.text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder")
+        #     self.text_encoder.eval()
+        #     self.text_encoder.to(device)
 
-            pos_ids = self.tokenizer(pos_prompt, max_length=self.tokenizer.model_max_length,
-                                    padding="max_length", truncation=True, return_tensors="pt").input_ids
-            neg_ids = self.tokenizer(neg_prompt, max_length=self.tokenizer.model_max_length,
-                                    padding="max_length", truncation=True, return_tensors="pt").input_ids
+        #     pos_ids = self.tokenizer(pos_prompt, max_length=self.tokenizer.model_max_length,
+        #                             padding="max_length", truncation=True, return_tensors="pt").input_ids
+        #     neg_ids = self.tokenizer(neg_prompt, max_length=self.tokenizer.model_max_length,
+        #                             padding="max_length", truncation=True, return_tensors="pt").input_ids
             
-            pos_ids = pos_ids.to(device)
-            neg_ids = neg_ids.to(device)
+        #     pos_ids = pos_ids.to(device)
+        #     neg_ids = neg_ids.to(device)
 
-            with torch.no_grad():
-                pos_prompt_enc = self.text_encoder(pos_ids)[0].squeeze(0).to(device)
-                neg_prompt_enc = self.text_encoder(neg_ids)[0].squeeze(0).to(device)
+        #     with torch.no_grad():
+        #         pos_prompt_enc = self.text_encoder(pos_ids)[0].squeeze(0).to(device)
+        #         neg_prompt_enc = self.text_encoder(neg_ids)[0].squeeze(0).to(device)
 
-            self.register_buffer("pos_prompt_enc", pos_prompt_enc)
-            self.register_buffer("neg_prompt_enc", neg_prompt_enc)
+        #     self.register_buffer("pos_prompt_enc", pos_prompt_enc)
+        #     self.register_buffer("neg_prompt_enc", neg_prompt_enc)
 
-        else:
-            raise ValueError("pos_prompt and neg_prompt must be strings or precomputed encodings.")
+        # else:
+        #     raise ValueError("pos_prompt and neg_prompt must be strings or precomputed encodings.")
+
+        encodings = torch.load("prompt_encodings.pt")
+        self.register_buffer("pos_prompt_enc", encodings["pos_prompt_enc"])
+        self.register_buffer("neg_prompt_enc", encodings["neg_prompt_enc"])
         
 
         self.guidance_scale = 1.07
@@ -279,10 +309,10 @@ class S3Diff_network(torch.nn.Module):
         self.deres_net.to(device)
 
         self.set_eval()
-        all_weights_path = 's3diff_all.pt'
-        if not os.path.exists(all_weights_path):
-            ## save all weights
-            torch.save(self.state_dict(), all_weights_path)
+        # all_weights_path = 's3diff_all.pt'
+        # if not os.path.exists(all_weights_path):
+        #     ## save all weights
+        #     torch.save(self.state_dict(), all_weights_path)
 
 
     def set_eval(self):
@@ -303,8 +333,6 @@ class S3Diff_network(torch.nn.Module):
         self.text_encoder.requires_grad_(False)
         self.deres_net.requires_grad_(False)
 
-    @perfcount
-    @torch.no_grad()
     def forward(self, im_lr):
         ### input: im_lr, [B, 3, 256, 256], 0~1.0
         ### output: output_image, [1, 3, 256, 256], -1.0~1.0
@@ -375,123 +403,103 @@ class S3Diff_network(torch.nn.Module):
         ## add tile function
         _, _, h, w = lq_latent.size()
         tile_size, tile_overlap = (self.latent_tiled_size, self.latent_tiled_overlap)
-        if h * w <= tile_size * tile_size:
-            # print(f"[Tiled Latent]: the input size is tiny and unnecessary to tile.")
-            pos_model_pred = self.unet(lq_latent, self.timesteps, encoder_hidden_states=pos_prompt_enc).sample
-            neg_model_pred = self.unet(lq_latent, self.timesteps, encoder_hidden_states=neg_prompt_enc).sample
-            model_pred = neg_model_pred + self.guidance_scale * (pos_model_pred - neg_model_pred)
-        else:
-            # print(f"[Tiled Latent]: the input size is {c_t.shape[-2]}x{c_t.shape[-1]}, need to tiled")
-            # tile_weights = self._gaussian_weights(tile_size, tile_size, 1).to()
-            tile_size = min(tile_size, min(h, w))
-            tile_weights = self._gaussian_weights(tile_size, tile_size, 1).to(im_lr_resize.device)
 
-            grid_rows = 0
-            cur_x = 0
-            while cur_x < lq_latent.size(-1):
-                cur_x = max(grid_rows * tile_size-tile_overlap * grid_rows, 0)+tile_size
-                grid_rows += 1
+        assert h * w <= tile_size * tile_size, f"[Tiled Latent]: the input size is tiny and unnecessary to tile."
 
-            grid_cols = 0
-            cur_y = 0
-            while cur_y < lq_latent.size(-2):
-                cur_y = max(grid_cols * tile_size-tile_overlap * grid_cols, 0)+tile_size
-                grid_cols += 1
+        pos_model_pred = self.unet(lq_latent, self.timesteps, encoder_hidden_states=pos_prompt_enc).sample
+        neg_model_pred = self.unet(lq_latent, self.timesteps, encoder_hidden_states=neg_prompt_enc).sample
+        model_pred = neg_model_pred + self.guidance_scale * (pos_model_pred - neg_model_pred)
+        
 
-            input_list = []
-            noise_preds = []
-            for row in range(grid_rows):
-                noise_preds_row = []
-                for col in range(grid_cols):
-                    if col < grid_cols-1 or row < grid_rows-1:
-                        # extract tile from input image
-                        ofs_x = max(row * tile_size-tile_overlap * row, 0)
-                        ofs_y = max(col * tile_size-tile_overlap * col, 0)
-                        # input tile area on total image
-                    if row == grid_rows-1:
-                        ofs_x = w - tile_size
-                    if col == grid_cols-1:
-                        ofs_y = h - tile_size
+        ### x_denoised = self.step(model_pred, self.timesteps, lq_latent) replace with the following one-step sampling
+        alpha_t = self.alphas_cumprod[999]
+        beta_t = 1.0 - alpha_t
+        x_denoised = (lq_latent - beta_t.sqrt() * model_pred) / alpha_t.sqrt()
 
-                    input_start_x = ofs_x
-                    input_end_x = ofs_x + tile_size
-                    input_start_y = ofs_y
-                    input_end_y = ofs_y + tile_size
-
-                    # input tile dimensions
-                    input_tile = lq_latent[:, :, input_start_y:input_end_y, input_start_x:input_end_x]
-                    input_list.append(input_tile)
-
-                    if len(input_list) == 1 or col == grid_cols-1:
-                        input_list_t = torch.cat(input_list, dim=0)
-                        # predict the noise residual
-                        pos_model_pred = self.unet(input_list_t, self.timesteps, encoder_hidden_states=pos_prompt_enc).sample
-                        neg_model_pred = self.unet(input_list_t, self.timesteps, encoder_hidden_states=neg_prompt_enc).sample
-                        model_out = neg_model_pred + self.guidance_scale * (pos_model_pred - neg_model_pred)
-                        input_list = []
-                    noise_preds.append(model_out)
-
-            # Stitch noise predictions for all tiles
-            noise_pred = torch.zeros(lq_latent.shape, device=lq_latent.device)
-            contributors = torch.zeros(lq_latent.shape, device=lq_latent.device)
-            # Add each tile contribution to overall latents
-            for row in range(grid_rows):
-                for col in range(grid_cols):
-                    if col < grid_cols-1 or row < grid_rows-1:
-                        # extract tile from input image
-                        ofs_x = max(row * tile_size-tile_overlap * row, 0)
-                        ofs_y = max(col * tile_size-tile_overlap * col, 0)
-                        # input tile area on total image
-                    if row == grid_rows-1:
-                        ofs_x = w - tile_size
-                    if col == grid_cols-1:
-                        ofs_y = h - tile_size
-
-                    input_start_x = ofs_x
-                    input_end_x = ofs_x + tile_size
-                    input_start_y = ofs_y
-                    input_end_y = ofs_y + tile_size
-
-                    noise_pred[:, :, input_start_y:input_end_y, input_start_x:input_end_x] += noise_preds[row*grid_cols + col] * tile_weights
-                    contributors[:, :, input_start_y:input_end_y, input_start_x:input_end_x] += tile_weights
-            # Average overlapping areas with more than 1 contributor
-            noise_pred /= contributors
-            model_pred = noise_pred
-
-        x_denoised = self.step(model_pred, self.timesteps, lq_latent, return_dict=True)
         output_image = (self.vae.decode(x_denoised / self.vae.config.scaling_factor).sample).clamp(-1, 1)
 
         return output_image
 
-    # def save_model(self, outf):
-    #     sd = {}
-    #     sd["unet_lora_target_modules"] = self.target_modules_unet
-    #     sd["vae_lora_target_modules"] = self.target_modules_vae
-    #     sd["rank_unet"] = self.lora_rank_unet
-    #     sd["rank_vae"] = self.lora_rank_vae
-    #     sd["state_dict_unet"] = {k: v for k, v in self.unet.state_dict().items() if "lora" in k or "conv_in" in k}
-    #     sd["state_dict_vae"] = {k: v for k, v in self.vae.state_dict().items() if "lora" in k or "skip_conv" in k}
-    #     sd["state_dict_vae_de_mlp"] = {k: v for k, v in self.vae_de_mlp.state_dict().items()}
-    #     sd["state_dict_unet_de_mlp"] = {k: v for k, v in self.unet_de_mlp.state_dict().items()}
-    #     sd["state_dict_vae_block_mlp"] = {k: v for k, v in self.vae_block_mlp.state_dict().items()}
-    #     sd["state_dict_unet_block_mlp"] = {k: v for k, v in self.unet_block_mlp.state_dict().items()}
-    #     sd["state_dict_vae_fuse_mlp"] = {k: v for k, v in self.vae_fuse_mlp.state_dict().items()}
-    #     sd["state_dict_unet_fuse_mlp"] = {k: v for k, v in self.unet_fuse_mlp.state_dict().items()}
-    #     sd["w"] = self.W
 
-    #     sd["state_embeddings"] = {
-    #                 "state_dict_vae_block": self.vae_block_embeddings.state_dict(),
-    #                 "state_dict_unet_block": self.unet_block_embeddings.state_dict(),
-    #             }
-    #     sd['betas'] = self.betas
-    #     # sd['alphas'] = self.alphas
-    #     # sd['alphas_cumprod'] = self.alphas_cumprod
-    #     # sd['final_alpha_cumprod'] = self.final_alpha_cumprod
-    #     # sd['timesteps'] = self.timesteps
-    #     sd['pos_prompt_enc'] = self.pos_prompt_enc
-    #     sd['neg_prompt_enc'] = self.neg_prompt_enc
+    def step(
+        self,
+        model_output: torch.Tensor,
+        timestep: int, ### timestep = 999 in one-step sampling
+        sample: torch.Tensor,
+        generator=None,
+        ):
+        """
+        Predict the sample from the previous timestep by reversing the SDE. This function propagates the diffusion
+        process from the learned model outputs (most often the predicted noise).
 
-    #     torch.save(sd, outf)
+        Args:
+            model_output (`torch.Tensor`):
+                The direct output from learned diffusion model.
+            timestep (`float`):
+                The current discrete timestep in the diffusion chain.
+            sample (`torch.Tensor`):
+                A current instance of a sample created by the diffusion process.
+            generator (`torch.Generator`, *optional*):
+                A random number generator.
+            return_dict (`bool`, *optional*, defaults to `True`):
+                Whether or not to return a [`~schedulers.scheduling_ddpm.DDPMSchedulerOutput`] or `tuple`.
+
+        Returns:
+            [`~schedulers.scheduling_ddpm.DDPMSchedulerOutput`] or `tuple`:
+                If return_dict is `True`, [`~schedulers.scheduling_ddpm.DDPMSchedulerOutput`] is returned, otherwise a
+                tuple is returned where the first element is the sample tensor.
+
+        """
+        t = timestep
+
+        prev_t = self.previous_timestep(t)
+
+        predicted_variance = None
+        # print('predicted_variance', predicted_variance)
+        # 1. compute alphas, betas
+        alpha_prod_t = self.alphas_cumprod[t]
+        alpha_prod_t_prev = self.alphas_cumprod[prev_t] if prev_t >= 0 else self.one
+        beta_prod_t = 1 - alpha_prod_t
+        beta_prod_t_prev = 1 - alpha_prod_t_prev
+        current_alpha_t = alpha_prod_t / alpha_prod_t_prev
+        current_beta_t = 1 - current_alpha_t
+
+        # 2. compute predicted original sample from predicted noise also called
+        # "predicted x_0" of formula (15) from https://arxiv.org/pdf/2006.11239.pdf
+        # if self.prediction_type == "epsilon":
+        pred_original_sample = (sample - beta_prod_t ** (0.5) * model_output) / alpha_prod_t ** (0.5) ## prediction_type == "epsilon"
+
+        # 3. Clip or threshold "predicted x_0"
+        # pred_original_sample = pred_original_sample.clamp(
+        #     -self.clip_sample_range, self.clip_sample_range
+        # )
+
+        # 4. Compute coefficients for pred_original_sample x_0 and current sample x_t
+        # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
+        pred_original_sample_coeff = (alpha_prod_t_prev ** (0.5) * current_beta_t) / beta_prod_t
+        current_sample_coeff = current_alpha_t ** (0.5) * beta_prod_t_prev / beta_prod_t
+
+        # 5. Compute predicted previous sample µ_t
+        # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
+        pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * sample
+        # return pred_prev_sample
+
+        # 6. Add noise
+        variance = 0
+        # print('t', t)
+        if t > 0:
+            device = model_output.device
+            layout = torch.strided
+            variance_noise = torch.randn(model_output.shape, generator=generator,
+                                          device=device, dtype=model_output.dtype, layout=layout).to(device)
+            # print('variance_noise', variance_noise.shape)
+            variance = (self._get_variance(t) ** 0.5) * variance_noise
+            # print('variance', variance.shape)
+
+        pred_prev_sample = pred_prev_sample + variance
+
+        return pred_prev_sample
+    
 
 
 
@@ -564,87 +572,6 @@ class S3Diff_network(torch.nn.Module):
 
 
 
-    def step(
-        self,
-        model_output: torch.Tensor,
-        timestep: int, ### timestep = 999 in one-step sampling
-        sample: torch.Tensor,
-        generator=None,
-        return_dict: bool = True,):
-        """
-        Predict the sample from the previous timestep by reversing the SDE. This function propagates the diffusion
-        process from the learned model outputs (most often the predicted noise).
-
-        Args:
-            model_output (`torch.Tensor`):
-                The direct output from learned diffusion model.
-            timestep (`float`):
-                The current discrete timestep in the diffusion chain.
-            sample (`torch.Tensor`):
-                A current instance of a sample created by the diffusion process.
-            generator (`torch.Generator`, *optional*):
-                A random number generator.
-            return_dict (`bool`, *optional*, defaults to `True`):
-                Whether or not to return a [`~schedulers.scheduling_ddpm.DDPMSchedulerOutput`] or `tuple`.
-
-        Returns:
-            [`~schedulers.scheduling_ddpm.DDPMSchedulerOutput`] or `tuple`:
-                If return_dict is `True`, [`~schedulers.scheduling_ddpm.DDPMSchedulerOutput`] is returned, otherwise a
-                tuple is returned where the first element is the sample tensor.
-
-        """
-        t = timestep
-
-        prev_t = self.previous_timestep(t)
-
-        predicted_variance = None
-        # print('predicted_variance', predicted_variance)
-        # 1. compute alphas, betas
-        alpha_prod_t = self.alphas_cumprod[t]
-        alpha_prod_t_prev = self.alphas_cumprod[prev_t] if prev_t >= 0 else self.one
-        beta_prod_t = 1 - alpha_prod_t
-        beta_prod_t_prev = 1 - alpha_prod_t_prev
-        current_alpha_t = alpha_prod_t / alpha_prod_t_prev
-        current_beta_t = 1 - current_alpha_t
-
-        # 2. compute predicted original sample from predicted noise also called
-        # "predicted x_0" of formula (15) from https://arxiv.org/pdf/2006.11239.pdf
-        # if self.prediction_type == "epsilon":
-        pred_original_sample = (sample - beta_prod_t ** (0.5) * model_output) / alpha_prod_t ** (0.5) ## prediction_type == "epsilon"
-
-        # 3. Clip or threshold "predicted x_0"
-        # pred_original_sample = pred_original_sample.clamp(
-        #     -self.clip_sample_range, self.clip_sample_range
-        # )
-
-        # 4. Compute coefficients for pred_original_sample x_0 and current sample x_t
-        # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
-        pred_original_sample_coeff = (alpha_prod_t_prev ** (0.5) * current_beta_t) / beta_prod_t
-        current_sample_coeff = current_alpha_t ** (0.5) * beta_prod_t_prev / beta_prod_t
-
-        # 5. Compute predicted previous sample µ_t
-        # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
-        pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * sample
-        return pred_prev_sample
-
-        # 6. Add noise
-        variance = 0
-        # print('t', t)
-        if t > 0:
-            device = model_output.device
-            layout = torch.strided
-            variance_noise = torch.randn(model_output.shape, generator=generator,
-                                          device=device, dtype=model_output.dtype, layout=layout).to(device)
-            # print('variance_noise', variance_noise.shape)
-            variance = (self._get_variance(t) ** 0.5) * variance_noise
-            # print('variance', variance.shape)
-
-        pred_prev_sample = pred_prev_sample + variance
-
-        return pred_prev_sample
-    
-
-
 
     def previous_timestep(self, timestep):
 
@@ -668,6 +595,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    tokenize_prompts(args.sd_path)
     model = S3Diff_network(
         pretrained_path=args.pretrained_path,
         de_net_path=args.de_net_path,
