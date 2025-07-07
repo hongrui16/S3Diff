@@ -618,7 +618,7 @@ class S3Diff_network(torch.nn.Module):
         # 5. Compute predicted previous sample µ_t
         # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
         pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * sample
-        # return pred_prev_sample
+        return pred_prev_sample
 
         # 6. Add noise
         variance = 0
