@@ -325,7 +325,7 @@ class S3Diff_network(torch.nn.Module):
         B = im_lr.shape[0]
         device = im_lr.device
         
-        ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
+        # ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
 
         # im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
         im_lr_resize = im_lr 
@@ -663,3 +663,42 @@ class S3Diff_network(torch.nn.Module):
         prev_t = timestep - self.num_train_timesteps // num_inference_steps
 
         return prev_t
+    
+
+if __name__ == "__main__":
+    import argparse
+    import cv2
+    parser = argparse.ArgumentParser(description="S3Diff Network")
+    parser.add_argument('--pretrained_path', type=str, default='s3diff_all.pt', help='Path to the pretrained model')
+    parser.add_argument('--de_net_path', type=str, default='de_net.pth', help='Path to the degradation network')
+    parser.add_argument('--sd_path', type=str, default='./sd_turbo', help='Path to the Stable Diffusion model')
+    parser.add_argument('--img_path', type=str, default=None, help='Path to the input image')
+
+    args = parser.parse_args()
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = S3Diff_network(
+        pretrained_path=args.pretrained_path,
+        de_net_path=args.de_net_path,
+        sd_path=args.sd_path,
+        device=device
+    ).to(device)
+
+    if args.img_path is not None:   
+        img = cv2.imread(args.img_path)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, (512, 512))
+        lr_img = img[:256, :256, :]
+
+        lr_img = torch.from_numpy(lr_img).float().permute(2, 0, 1).unsqueeze(0) / 255.0
+        lr_img = lr_img.to(device)
+
+        hr_img = model(lr_img)
+        hr_img = hr_img.squeeze(0).permute(1, 2, 0).cpu().numpy()
+        hr_img = (hr_img * 255.0).clip(0, 255).astype(np.uint8)
+        hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)    
+
+        composed_img = np.hstack((lr_img, hr_img))
+        # cv2.imshow("Input and Output", composed_img)
+        cv2.imwrite("output_image.png", composed_img)
+        print("Output image saved as output_image.png")
