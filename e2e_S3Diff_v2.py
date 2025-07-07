@@ -63,6 +63,50 @@ def tokenize_prompts(sd_path):
     # 保存到 checkpoint 中（或保存为单独 .pt）
     torch.save({'pos_prompt_enc': pos_prompt_enc, 'neg_prompt_enc': neg_prompt_enc}, 'prompt_encodings.pt')
 
+def merge_lora_weights(model, adapter_name="vae_skip"):
+    for name, module in model.named_modules():
+        if not hasattr(module, "base_layer"):
+            continue
+        if not hasattr(module, "lora_A"):
+            continue
+        if not hasattr(module, "de_mod"):
+            continue
+
+        lora_A = module.lora_A[adapter_name]
+        lora_B = module.lora_B[adapter_name]
+        scaling = module.scaling[adapter_name]
+        de_mod = module.de_mod[0]  # [r, r]
+
+        # 1. 获取两个矩阵的权重
+        A = lora_A.weight.data  # [r, in]  or  [r, in, 1, 1]
+        B = lora_B.weight.data  # [out, r] or  [out, r, 1, 1]
+
+        if isinstance(module.base_layer, nn.Linear):
+            # 2. 合并 linear 的 LoRA 权重
+            merged = B @ (de_mod @ A) * scaling  # [out, in]
+            module.base_layer.weight.data += merged
+
+        elif isinstance(module.base_layer, nn.Conv2d):
+            # 处理 conv2d，要求 A/B 是 conv with kernel_size=1
+            A = A.squeeze(-1).squeeze(-1)  # [r, in]
+            B = B.squeeze(-1).squeeze(-1)  # [out, r]
+            merged = (B @ (de_mod @ A)).unsqueeze(-1).unsqueeze(-1) * scaling  # [out, in, 1, 1]
+            module.base_layer.weight.data += merged
+
+        else:
+            raise NotImplementedError("Only Linear and Conv2d are supported.")
+
+        # 3. 清理结构（确保 ONNX 不再引用它们）
+        del module.lora_A
+        del module.lora_B
+        del module.lora_dropout
+        del module.scaling
+        del module.use_dora
+        del module.de_mod
+        module.forward = module.base_layer.forward  # 恢复原始 forward
+
+        print(f"[LoRA] Merged and cleaned: {name}")
+
 
 class S3Diff_network(torch.nn.Module):
     def __init__(self, pretrained_path = None, de_net_path = None, sd_path = './sd_turbo', 
@@ -283,53 +327,6 @@ class S3Diff_network(torch.nn.Module):
         #     ## save all weights
         #     torch.save(self.state_dict(), all_weights_path)
 
-    def merge_lora_and_restore(self):
-        # Merge LoRA weights into original weights and delete LoRA attributes
-        for name, module in self.vae.named_modules():
-            if name in self.vae_lora_layers:
-                base_layer = module.base_layer
-                lora_A = getattr(module, 'lora_A', None)
-                lora_B = getattr(module, 'lora_B', None)
-                if lora_A is not None and lora_B is not None and name in self.vae_de_mods:
-                    de_mod = self.vae_de_mods[name]
-                    weight = base_layer.weight + (lora_A @ lora_B @ de_mod).T
-                    base_layer.weight.data = weight
-                    # Delete LoRA attributes
-                    if hasattr(module, 'lora_A'):
-                        del module.lora_A
-                    if hasattr(module, 'lora_B'):
-                        del module.lora_B
-                    if hasattr(module, 'de_mod'):
-                        del module.de_mod
-                if hasattr(module, "original_forward"):
-                    module.forward = module.original_forward
-                    if hasattr(module, 'original_forward'):
-                        del module.original_forward  # Clean up
-
-        for name, module in self.unet.named_modules():
-            if name in self.unet_lora_layers:
-                base_layer = module.base_layer
-                lora_A = getattr(module, 'lora_A', None)
-                lora_B = getattr(module, 'lora_B', None)
-                if lora_A is not None and lora_B is not None and name in self.unet_de_mods:
-                    de_mod = self.unet_de_mods[name]
-                    weight = base_layer.weight + (lora_A @ lora_B @ de_mod).T
-                    base_layer.weight.data = weight
-                    # Delete LoRA attributes
-                    if hasattr(module, 'lora_A'):
-                        del module.lora_A
-                    if hasattr(module, 'lora_B'):
-                        del module.lora_B
-                    if hasattr(module, 'de_mod'):
-                        del module.de_mod
-                if hasattr(module, "original_forward"):
-                    module.forward = module.original_forward
-                    if hasattr(module, 'original_forward'):
-                        del module.original_forward  # Clean up
-
-        # Clean up de_mod dictionaries
-        self.vae_de_mods.clear()
-        self.unet_de_mods.clear()
 
 
     def set_eval(self):
@@ -467,7 +464,8 @@ if __name__ == "__main__":
 
     parent_dir = os.path.dirname(args.pretrained_path)
 
-    model.merge_lora_and_restore()
+    merge_lora_weights(model.vae, adapter_name="vae_skip")
+    merge_lora_weights(model.unet, adapter_name="default")
 
     dummy_input = torch.randn(1, 3, 256, 256).to(device)
 
