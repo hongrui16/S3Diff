@@ -102,6 +102,8 @@ def main(args):
     else:
         weight_dtype = torch.float32
 
+    if device == 'cpu':
+        weight_dtype = torch.float32
     
     net_sr.to(accelerator.device, dtype=weight_dtype)
     net_de.to(accelerator.device, dtype=weight_dtype)
@@ -139,7 +141,7 @@ def main(args):
         if pad_h > 0 or pad_w > 0:
             im_lr_resize = im_lr_resize.float()  # 确保是 float32
             im_lr_resize = F.pad(im_lr_resize, pad=(0, pad_w, 0, pad_h), mode='replicate')
-            im_lr_resize = im_lr_resize.half()
+            im_lr_resize = im_lr_resize..to(weight_dtype)
 
     
         with torch.no_grad():
