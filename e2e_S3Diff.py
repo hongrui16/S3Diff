@@ -98,7 +98,13 @@ class S3Diff_network(torch.nn.Module):
         num_inference_steps = 1
         self.num_inference_steps = num_inference_steps
         
-        self.timesteps = torch.tensor([999]).long().to(device)
+        step_ratio = self.num_train_timesteps / self.num_inference_steps
+        # creates integer timesteps by multiplying by ratio
+        # casting to int to avoid issues when num_inference_step is power of 3
+        timesteps = np.round(np.arange(self.num_train_timesteps, 0, -step_ratio)).astype(np.int64)
+        timesteps -= 1
+        print('timesteps', timesteps)
+        self.timesteps = torch.from_numpy(timesteps).to(device)
         ###########--------------scheduling end----------------->>>>>>>>>>>>
 
         if os.path.exists(pretrained_path):
@@ -618,7 +624,6 @@ class S3Diff_network(torch.nn.Module):
         # 5. Compute predicted previous sample µ_t
         # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
         pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * sample
-        return pred_prev_sample
 
         # 6. Add noise
         variance = 0
