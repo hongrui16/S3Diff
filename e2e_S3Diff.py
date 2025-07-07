@@ -318,7 +318,7 @@ class S3Diff_network(torch.nn.Module):
         im_lr_resize = torch.clamp(im_lr*2 -1.0, -1.0, 1.0)
 
 
-        deg_score = self.deres_net(im_lr_resize)
+        deg_score = self.deres_net(im_lr)
         # ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
 
         # im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
@@ -625,6 +625,7 @@ class S3Diff_network(torch.nn.Module):
         # 5. Compute predicted previous sample µ_t
         # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
         pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * sample
+        
 
         # 6. Add noise
         variance = 0
