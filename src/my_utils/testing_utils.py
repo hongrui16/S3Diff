@@ -38,7 +38,7 @@ def parse_args_paired_testing(input_args=None):
     parser = argparse.ArgumentParser()
     
     parser.add_argument("--input_dir", type=str, default=None,)
-    parser.add_argument("--input_img_path", type=str, default=None,)
+    parser.add_argument("--img_path", type=str, default=None,)
 
     parser.add_argument("--ref_path", type=str, default=None,)
     parser.add_argument("--base_config", default="./configs/sr_test.yaml", type=str)

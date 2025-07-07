@@ -105,10 +105,10 @@ def main(args):
         input_image_list = sorted(
             sum([list(Path(args.input_dir).glob(ext)) for ext in ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']], [])
         )
-    elif not args.input_img_path is None:
-        input_image_list = [Path(args.input_img_path)]
+    elif not args.img_path is None:
+        input_image_list = [Path(args.img_path)]
     else:
-        raise ValueError("Please provide either --input_dir or --input_img_path.")
+        raise ValueError("Please provide either --input_dir or --img_path.")
     print(f'num images: {len(input_image_list)}')
     for img_path in tqdm.tqdm(input_image_list):
         im_lr = util_image.imread(img_path, chn='rgb', dtype='float32')  # HWC float32
