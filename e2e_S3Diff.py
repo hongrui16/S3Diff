@@ -106,16 +106,16 @@ class S3Diff_network(torch.nn.Module):
         self.clip_sample_range = clip_sample_range
 
 
-        self.betas = torch.linspace(beta_start**0.5, beta_end**0.5, num_train_timesteps, dtype=torch.float32) ** 2
+        betas = torch.linspace(beta_start**0.5, beta_end**0.5, num_train_timesteps, dtype=torch.float32) ** 2
 
-        self.alphas = 1.0 - self.betas
-        self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
-        self.one = torch.tensor(1.0, device= device)
+        alphas = 1.0 - betas
+        alphas_cumprod = torch.cumprod(alphas, dim=0)
+        one = torch.tensor(1.0, device= device)
 
-        self.register_buffer("betas", self.betas)
-        self.register_buffer("alphas", self.alphas)
-        self.register_buffer("alphas_cumprod", self.alphas_cumprod)
-        self.register_buffer("one", self.one)
+        self.register_buffer("betas", betas)
+        self.register_buffer("alphas", alphas)
+        self.register_buffer("alphas_cumprod", alphas_cumprod)
+        self.register_buffer("one", one)
 
         # standard deviation of the initial noise distribution
         self.init_noise_sigma = 1.0
