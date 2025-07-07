@@ -315,7 +315,7 @@ class S3Diff_network(torch.nn.Module):
         # ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
 
         # im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
-        im_lr_resize = torch.clamp(im_lr_resize*2 -1.0, -1.0, 1.0)
+        im_lr_resize = torch.clamp(im_lr*2 -1.0, -1.0, 1.0)
         
 
         # degradation fourier embedding
