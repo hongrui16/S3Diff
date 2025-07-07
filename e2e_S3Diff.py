@@ -676,7 +676,7 @@ if __name__ == "__main__":
 
         hr_img = model(lr_img_tensor)
         hr_img = hr_img.squeeze(0).permute(1, 2, 0).cpu().numpy()
-        hr_img = ((hr_img + 1) * 255.0).clip(0, 255).astype(np.uint8)
+        hr_img = ((hr_img * 0.5 + 0.5) * 255.0).clip(0, 255).astype(np.uint8)
         hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)
         print('hr_img shape:', hr_img.shape)
         cv2.imwrite("output_hr_image.png", hr_img)
