@@ -117,7 +117,7 @@ def main(args):
     print(f'num images: {len(input_image_list)}')
     for img_path in tqdm.tqdm(input_image_list):
         im_lr = util_image.imread(img_path, chn='rgb', dtype='float32')  # HWC float32
-        im_lr = util_image.img2tensor(im_lr).cuda()                      # 1CHW float32
+        im_lr = util_image.img2tensor(im_lr).to(device)                      # 1CHW float32
         im_lr = im_lr.to(memory_format=torch.contiguous_format).float()
     
         ori_h, ori_w = im_lr.shape[2:]
