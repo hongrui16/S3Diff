@@ -98,13 +98,14 @@ class S3Diff_network(torch.nn.Module):
         num_inference_steps = 1
         self.num_inference_steps = num_inference_steps
         
-        step_ratio = self.num_train_timesteps / self.num_inference_steps
-        # creates integer timesteps by multiplying by ratio
-        # casting to int to avoid issues when num_inference_step is power of 3
-        timesteps = np.round(np.arange(self.num_train_timesteps, 0, -step_ratio)).astype(np.int64)
-        timesteps -= 1
-        print('timesteps', timesteps)
-        self.timesteps = torch.from_numpy(timesteps).to(device)
+        # step_ratio = self.num_train_timesteps / self.num_inference_steps
+        # # creates integer timesteps by multiplying by ratio
+        # # casting to int to avoid issues when num_inference_step is power of 3
+        # timesteps = np.round(np.arange(self.num_train_timesteps, 0, -step_ratio)).astype(np.int64)
+        # timesteps -= 1
+        # print('timesteps', timesteps)
+        # self.timesteps = torch.from_numpy(timesteps).to(device)
+        self.timesteps = torch.tensor([999], device=device).long()
         ###########--------------scheduling end----------------->>>>>>>>>>>>
 
         if os.path.exists(pretrained_path):
@@ -266,7 +267,7 @@ class S3Diff_network(torch.nn.Module):
         vae.to(device)
 
         self.unet, self.vae = unet, vae
-        self.timesteps = torch.tensor([999], device=device).long()
+        
         self.text_encoder.requires_grad_(False)
 
         # vae tile
