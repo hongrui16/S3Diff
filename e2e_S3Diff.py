@@ -463,35 +463,35 @@ class S3Diff_network(torch.nn.Module):
 
         return output_image
 
-    def save_model(self, outf):
-        sd = {}
-        sd["unet_lora_target_modules"] = self.target_modules_unet
-        sd["vae_lora_target_modules"] = self.target_modules_vae
-        sd["rank_unet"] = self.lora_rank_unet
-        sd["rank_vae"] = self.lora_rank_vae
-        sd["state_dict_unet"] = {k: v for k, v in self.unet.state_dict().items() if "lora" in k or "conv_in" in k}
-        sd["state_dict_vae"] = {k: v for k, v in self.vae.state_dict().items() if "lora" in k or "skip_conv" in k}
-        sd["state_dict_vae_de_mlp"] = {k: v for k, v in self.vae_de_mlp.state_dict().items()}
-        sd["state_dict_unet_de_mlp"] = {k: v for k, v in self.unet_de_mlp.state_dict().items()}
-        sd["state_dict_vae_block_mlp"] = {k: v for k, v in self.vae_block_mlp.state_dict().items()}
-        sd["state_dict_unet_block_mlp"] = {k: v for k, v in self.unet_block_mlp.state_dict().items()}
-        sd["state_dict_vae_fuse_mlp"] = {k: v for k, v in self.vae_fuse_mlp.state_dict().items()}
-        sd["state_dict_unet_fuse_mlp"] = {k: v for k, v in self.unet_fuse_mlp.state_dict().items()}
-        sd["w"] = self.W
+    # def save_model(self, outf):
+    #     sd = {}
+    #     sd["unet_lora_target_modules"] = self.target_modules_unet
+    #     sd["vae_lora_target_modules"] = self.target_modules_vae
+    #     sd["rank_unet"] = self.lora_rank_unet
+    #     sd["rank_vae"] = self.lora_rank_vae
+    #     sd["state_dict_unet"] = {k: v for k, v in self.unet.state_dict().items() if "lora" in k or "conv_in" in k}
+    #     sd["state_dict_vae"] = {k: v for k, v in self.vae.state_dict().items() if "lora" in k or "skip_conv" in k}
+    #     sd["state_dict_vae_de_mlp"] = {k: v for k, v in self.vae_de_mlp.state_dict().items()}
+    #     sd["state_dict_unet_de_mlp"] = {k: v for k, v in self.unet_de_mlp.state_dict().items()}
+    #     sd["state_dict_vae_block_mlp"] = {k: v for k, v in self.vae_block_mlp.state_dict().items()}
+    #     sd["state_dict_unet_block_mlp"] = {k: v for k, v in self.unet_block_mlp.state_dict().items()}
+    #     sd["state_dict_vae_fuse_mlp"] = {k: v for k, v in self.vae_fuse_mlp.state_dict().items()}
+    #     sd["state_dict_unet_fuse_mlp"] = {k: v for k, v in self.unet_fuse_mlp.state_dict().items()}
+    #     sd["w"] = self.W
 
-        sd["state_embeddings"] = {
-                    "state_dict_vae_block": self.vae_block_embeddings.state_dict(),
-                    "state_dict_unet_block": self.unet_block_embeddings.state_dict(),
-                }
-        sd['betas'] = self.betas
-        # sd['alphas'] = self.alphas
-        # sd['alphas_cumprod'] = self.alphas_cumprod
-        # sd['final_alpha_cumprod'] = self.final_alpha_cumprod
-        # sd['timesteps'] = self.timesteps
-        sd['pos_prompt_enc'] = self.pos_prompt_enc
-        sd['neg_prompt_enc'] = self.neg_prompt_enc
+    #     sd["state_embeddings"] = {
+    #                 "state_dict_vae_block": self.vae_block_embeddings.state_dict(),
+    #                 "state_dict_unet_block": self.unet_block_embeddings.state_dict(),
+    #             }
+    #     sd['betas'] = self.betas
+    #     # sd['alphas'] = self.alphas
+    #     # sd['alphas_cumprod'] = self.alphas_cumprod
+    #     # sd['final_alpha_cumprod'] = self.final_alpha_cumprod
+    #     # sd['timesteps'] = self.timesteps
+    #     sd['pos_prompt_enc'] = self.pos_prompt_enc
+    #     sd['neg_prompt_enc'] = self.neg_prompt_enc
 
-        torch.save(sd, outf)
+    #     torch.save(sd, outf)
 
 
 
@@ -625,7 +625,7 @@ class S3Diff_network(torch.nn.Module):
         # 5. Compute predicted previous sample µ_t
         # See formula (7) from https://arxiv.org/pdf/2006.11239.pdf
         pred_prev_sample = pred_original_sample_coeff * pred_original_sample + current_sample_coeff * sample
-        
+        return pred_prev_sample
 
         # 6. Add noise
         variance = 0
