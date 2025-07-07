@@ -665,10 +665,12 @@ if __name__ == "__main__":
 
     if args.img_path is not None:   
         img = cv2.imread(args.img_path)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
         img = cv2.resize(img, (512, 512))
         lr_img = img[128:384, 128:384, :]
-
+        print('lr_img shape:', lr_img.shape)
+        cv2.imwrite("input_lr_image.png", lr_img)
+        lr_img = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
         lr_img = torch.from_numpy(lr_img).float().permute(2, 0, 1).unsqueeze(0) / 255.0
         lr_img = lr_img.to(device)
 
@@ -676,7 +678,8 @@ if __name__ == "__main__":
         hr_img = hr_img.squeeze(0).permute(1, 2, 0).cpu().numpy()
         hr_img = (hr_img * 255.0).clip(0, 255).astype(np.uint8)
         hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)    
-
+        print('hr_img shape:', hr_img.shape)
+        cv2.imwrite("output_hr_image.png", hr_img)
         composed_img = np.hstack((lr_img, hr_img))
         # cv2.imshow("Input and Output", composed_img)
         cv2.imwrite("output_image.png", composed_img)
