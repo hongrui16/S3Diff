@@ -303,11 +303,12 @@ class S3Diff_network(torch.nn.Module):
         ### output: output_image, [1, 3, 256, 256], -1.0~1.0
 
         B = im_lr.shape[0]
+        device = im_lr.device
 
         neg_prompt_enc = self.neg_prompt_enc.unsqueeze(0).expand(B, -1, -1).to(device)
         pos_prompt_enc = self.pos_prompt_enc.unsqueeze(0).expand(B, -1, -1).to(device)
         
-        device = im_lr.device
+        
 
 
         deg_score = self.deres_net(im_lr)
