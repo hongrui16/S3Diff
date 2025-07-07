@@ -670,14 +670,14 @@ if __name__ == "__main__":
         lr_img = img[128:384, 128:384, :]
         print('lr_img shape:', lr_img.shape)
         cv2.imwrite("input_lr_image.png", lr_img)
-        lr_img = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
-        lr_img = torch.from_numpy(lr_img).float().permute(2, 0, 1).unsqueeze(0) / 255.0
-        lr_img = lr_img.to(device)
+        lr_img_rgb = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
+        lr_img_tensor = torch.from_numpy(lr_img_rgb).float().permute(2, 0, 1).unsqueeze(0) / 255.0
+        lr_img_tensor = lr_img_tensor.to(device)
 
-        hr_img = model(lr_img)
+        hr_img = model(lr_img_tensor)
         hr_img = hr_img.squeeze(0).permute(1, 2, 0).cpu().numpy()
-        hr_img = (hr_img * 255.0).clip(0, 255).astype(np.uint8)
-        hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)    
+        hr_img = ((hr_img + 1) * 255.0).clip(0, 255).astype(np.uint8)
+        hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)
         print('hr_img shape:', hr_img.shape)
         cv2.imwrite("output_hr_image.png", hr_img)
         composed_img = np.hstack((lr_img, hr_img))
