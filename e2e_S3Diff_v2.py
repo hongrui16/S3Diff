@@ -284,20 +284,52 @@ class S3Diff_network(torch.nn.Module):
         #     torch.save(self.state_dict(), all_weights_path)
 
     def merge_lora_and_restore(self):
-        # 合并 LoRA 权重到原始权重
-        self.vae.merge_adapter("vae_skip")
-        self.unet.merge_adapter()
+        # Merge LoRA weights into original weights and delete LoRA attributes
+        for name, module in self.vae.named_modules():
+            if name in self.vae_lora_layers:
+                base_layer = module.base_layer
+                lora_A = getattr(module, 'lora_A', None)
+                lora_B = getattr(module, 'lora_B', None)
+                if lora_A is not None and lora_B is not None and name in self.vae_de_mods:
+                    de_mod = self.vae_de_mods[name]
+                    weight = base_layer.weight + (lora_A @ lora_B @ de_mod).T
+                    base_layer.weight.data = weight
+                    # Delete LoRA attributes
+                    if hasattr(module, 'lora_A'):
+                        del module.lora_A
+                    if hasattr(module, 'lora_B'):
+                        del module.lora_B
+                    if hasattr(module, 'de_mod'):
+                        del module.de_mod
+                if hasattr(module, "original_forward"):
+                    module.forward = module.original_forward
+                    if hasattr(module, 'original_forward'):
+                        del module.original_forward  # Clean up
 
-        # 清除 forward patch
-        for name in self.vae_lora_layers:
-            module = dict(self.vae.named_modules())[name]
-            if hasattr(module, "original_forward"):
-                module.forward = module.original_forward  # 如果之前存过的话
+        for name, module in self.unet.named_modules():
+            if name in self.unet_lora_layers:
+                base_layer = module.base_layer
+                lora_A = getattr(module, 'lora_A', None)
+                lora_B = getattr(module, 'lora_B', None)
+                if lora_A is not None and lora_B is not None and name in self.unet_de_mods:
+                    de_mod = self.unet_de_mods[name]
+                    weight = base_layer.weight + (lora_A @ lora_B @ de_mod).T
+                    base_layer.weight.data = weight
+                    # Delete LoRA attributes
+                    if hasattr(module, 'lora_A'):
+                        del module.lora_A
+                    if hasattr(module, 'lora_B'):
+                        del module.lora_B
+                    if hasattr(module, 'de_mod'):
+                        del module.de_mod
+                if hasattr(module, "original_forward"):
+                    module.forward = module.original_forward
+                    if hasattr(module, 'original_forward'):
+                        del module.original_forward  # Clean up
 
-        for name in self.unet_lora_layers:
-            module = dict(self.unet.named_modules())[name]
-            if hasattr(module, "original_forward"):
-                module.forward = module.original_forward
+        # Clean up de_mod dictionaries
+        self.vae_de_mods.clear()
+        self.unet_de_mods.clear()
 
 
     def set_eval(self):
