@@ -435,11 +435,15 @@ if __name__ == "__main__":
     parser.add_argument('--de_net_path', type=str, default='de_net.pth', help='Path to the degradation network')
     parser.add_argument('--sd_path', type=str, default='./sd_turbo', help='Path to the Stable Diffusion model')
     parser.add_argument('--img_path', type=str, default=None, help='Path to the input image')
+    parser.add_argument('--use_fp16', action='store_true', help='Use FP16 for inference')
+
 
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
+    export_fp16 = args.use_fp16 or device.type == 'cuda'
+
     ### generate prompt encodings if not exist
     if not os.path.exists("prompt_encodings.pt"):
         print("Generating prompt encodings...")
@@ -461,18 +465,25 @@ if __name__ == "__main__":
     merge_lora_weights(model.unet, adapter_name="default")
 
     model.eval()
-    model.half()  # or keep float32 for now
+    # model.half()  # or keep float32 for now
     for p in model.parameters():
         p.requires_grad = False
 
+    if export_fp16:
+        model = model.half()
+        dummy_input = torch.rand(1, 3, 256, 256).half().to(device)  # if using half
+        precision = 'fp16'
+    else:
+        model = model.float()
+        dummy_input = torch.rand(1, 3, 256, 256).float().to(device)  # if using float
+        precision = 'fp32'
 
-    dummy_input = torch.rand(1, 3, 256, 256).half().to(device)  # if using half
-
+    onnx_path = os.path.join(parent_dir, f"s3diff_{precision}.onnx")
     with torch.no_grad():
         torch.onnx.export(
             model,
             dummy_input,
-            f"{parent_dir}/s3diff.onnx",
+            onnx_path,
             input_names=["im_lr"],
             output_names=["out_im"],
             opset_version=17,

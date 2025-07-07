@@ -24,3 +24,5 @@ gradio==3.43.1
 huggingface_hub==0.22.2
 torchvision==0.16.0
 torch==2.1.0
+onnx
+onnxruntime
