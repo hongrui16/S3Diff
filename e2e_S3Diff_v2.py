@@ -438,7 +438,7 @@ if __name__ == "__main__":
     import argparse
     import cv2
     parser = argparse.ArgumentParser(description="S3Diff Network")
-    parser.add_argument('--pretrained_path', type=str, default='s3diff_all.pt', help='Path to the pretrained model')
+    parser.add_argument('--pretrained_path', type=str, default=None, help='Path to the lora weights')
     parser.add_argument('--de_net_path', type=str, default='de_net.pth', help='Path to the degradation network')
     parser.add_argument('--sd_path', type=str, default='./sd_turbo', help='Path to the Stable Diffusion model')
     parser.add_argument('--img_path', type=str, default=None, help='Path to the input image')
@@ -479,7 +479,6 @@ if __name__ == "__main__":
             opset_version=17,
             do_constant_folding=True,
             dynamic_axes={"im_lr": {0: "batch"}, "out_im": {0: "batch"}},
-            example_outputs=model(dummy_input)
         )
 
     if args.img_path is not None:   
