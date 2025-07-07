@@ -688,7 +688,7 @@ if __name__ == "__main__":
         img = cv2.imread(args.img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (512, 512))
-        lr_img = img[:256, :256, :]
+        lr_img = img[128:384, 128:384, :]
 
         lr_img = torch.from_numpy(lr_img).float().permute(2, 0, 1).unsqueeze(0) / 255.0
         lr_img = lr_img.to(device)
