@@ -42,14 +42,15 @@ def get_layer_number(module_name):
 
 
 class S3Diff(torch.nn.Module):
-    def __init__(self, sd_path=None, pretrained_path=None, lora_rank_unet=32, lora_rank_vae=16, block_embedding_dim=64, args=None):
+    def __init__(self, sd_path=None, pretrained_path=None, lora_rank_unet=32, lora_rank_vae=16, block_embedding_dim=64, args=None, **kwargs):
         super().__init__()
+        device = kwargs.get("device", "cpu")
         self.args = args
         self.latent_tiled_size = args.latent_tiled_size
         self.latent_tiled_overlap = args.latent_tiled_overlap
 
         self.tokenizer = AutoTokenizer.from_pretrained(sd_path, subfolder="tokenizer")
-        self.text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder").cuda()
+        self.text_encoder = CLIPTextModel.from_pretrained(sd_path, subfolder="text_encoder").to(device)
         self.sched = make_1step_sched(sd_path)
         self.guidance_scale = 1.07
 
@@ -181,10 +182,10 @@ class S3Diff(torch.nn.Module):
 
         self.unet_layer_dict = {name: get_layer_number(name) for name in self.unet_lora_layers}
 
-        unet.to("cuda")
-        vae.to("cuda")
+        unet.to(device)
+        vae.to(device)
         self.unet, self.vae = unet, vae
-        self.timesteps = torch.tensor([999], device="cuda").long()
+        self.timesteps = torch.tensor([999], device=device).long()
         self.text_encoder.requires_grad_(False)
 
         # vae tile
@@ -231,11 +232,11 @@ class S3Diff(torch.nn.Module):
     @perfcount
     @torch.no_grad()
     def forward(self, c_t, deg_score, pos_prompt, neg_prompt):
- 
+        device = c_t.device
         if pos_prompt is not None:
             # encode the text prompt
             pos_caption_tokens = self.tokenizer(pos_prompt, max_length=self.tokenizer.model_max_length,
-                                            padding="max_length", truncation=True, return_tensors="pt").input_ids.cuda()
+                                            padding="max_length", truncation=True, return_tensors="pt").input_ids.to(device)
             pos_caption_enc = self.text_encoder(pos_caption_tokens)[0]
         else:
             pos_caption_enc = self.text_encoder(prompt_tokens)[0]
@@ -243,7 +244,7 @@ class S3Diff(torch.nn.Module):
         if neg_prompt is not None:
             # encode the text prompt
             neg_caption_tokens = self.tokenizer(neg_prompt, max_length=self.tokenizer.model_max_length,
-                                            padding="max_length", truncation=True, return_tensors="pt").input_ids.cuda()
+                                            padding="max_length", truncation=True, return_tensors="pt").input_ids.to(device)
             neg_caption_enc = self.text_encoder(neg_caption_tokens)[0]
         else:
             neg_caption_enc = self.text_encoder(neg_prompt_tokens)[0]
