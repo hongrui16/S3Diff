@@ -347,7 +347,7 @@ class S3Diff_network(torch.nn.Module):
     def forward(self, im_lr):
         '''
         
-        Args:            im_lr: [1, 3, 256, 256], 0~1.0, the input size is up to 768x768 without titling.
+        Args:            im_lr: [1, 3, 256, 256], 0~1.0, the input size is up to 768x768 without titling. 为了统一, 转成-1~1.0
         Returns:         output_image: [1, 3, 256, 256], 0~1.0
         '''
         B = im_lr.shape[0]
@@ -356,16 +356,12 @@ class S3Diff_network(torch.nn.Module):
         neg_prompt_enc = self.neg_prompt_enc.unsqueeze(0).expand(B, -1, -1).to(device)
         pos_prompt_enc = self.pos_prompt_enc.unsqueeze(0).expand(B, -1, -1).to(device)
         
-        im_lr_resize = torch.clamp(im_lr*2 -1.0, -1.0, 1.0)
+        # im_lr_resize = torch.clamp(im_lr*2 -1.0, -1.0, 1.0)
 
 
         deg_score = self.deres_net(im_lr)
-        # ori_h, ori_w = im_lr.shape[-2], im_lr.shape[-1]
-
-        # im_lr_resize = F.interpolate(im_lr, size=(ori_h*self.enlarge_ratio, ori_w*self.enlarge_ratio), mode='bilinear', align_corners=False)
         
-        
-
+    
         # degradation fourier embedding
         deg_proj = deg_score[..., None] * self.W[None, None, :] * 2 * np.pi
         deg_proj = torch.cat([torch.sin(deg_proj), torch.cos(deg_proj)], dim=-1)
@@ -411,7 +407,7 @@ class S3Diff_network(torch.nn.Module):
                     unet_embed = unet_embeds[:, -1]
                 module.de_mod = unet_embed.reshape(-1, self.lora_rank_unet, self.lora_rank_unet)
 
-        lq_latent = self.vae.encode(im_lr_resize).latent_dist.sample() * self.vae.config.scaling_factor
+        lq_latent = self.vae.encode(im_lr).latent_dist.sample() * self.vae.config.scaling_factor
 
         ## add tile function
 
@@ -464,7 +460,13 @@ if __name__ == "__main__":
     merge_lora_weights(model.vae, adapter_name="vae_skip")
     merge_lora_weights(model.unet, adapter_name="default")
 
-    dummy_input = torch.randn(1, 3, 256, 256).to(device)
+    model.eval()
+    model.half()  # or keep float32 for now
+    for p in model.parameters():
+        p.requires_grad = False
+
+
+    dummy_input = torch.rand(1, 3, 256, 256).half().to(device)  # if using half
 
     with torch.no_grad():
         torch.onnx.export(
@@ -475,7 +477,7 @@ if __name__ == "__main__":
             output_names=["out_im"],
             opset_version=17,
             do_constant_folding=True,
-            dynamic_axes={"im_lr": {0: "batch"}, "out_im": {0: "batch"}},
+            # dynamic_axes={"im_lr": {0: "batch"}, "out_im": {0: "batch"}},
         )
 
     if args.img_path is not None:   
