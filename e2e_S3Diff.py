@@ -298,7 +298,7 @@ class S3Diff_network(torch.nn.Module):
 
         self.unet, self.vae = unet, vae
         
-        self.text_encoder.requires_grad_(False)
+        # self.text_encoder.requires_grad_(False)
 
         # vae tile
         self._init_tiled_vae(encoder_tile_size=self.vae_encoder_tiled_size, decoder_tile_size=self.vae_decoder_tiled_size)
