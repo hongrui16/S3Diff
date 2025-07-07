@@ -118,7 +118,7 @@ def main(args):
     for img_path in tqdm.tqdm(input_image_list):
         im_lr = util_image.imread(img_path, chn='rgb', dtype='float32')  # HWC float32
         im_lr = util_image.img2tensor(im_lr).to(device)                      # 1CHW float32
-        im_lr = im_lr.to(memory_format=torch.contiguous_format).float()
+        im_lr = im_lr.to(memory_format=torch.contiguous_format).to(weight_dtype)
     
         ori_h, ori_w = im_lr.shape[2:]
         if config.sf != 1:
