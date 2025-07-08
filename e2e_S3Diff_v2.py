@@ -436,6 +436,7 @@ if __name__ == "__main__":
     parser.add_argument('--sd_path', type=str, default='./sd_turbo', help='Path to the Stable Diffusion model')
     parser.add_argument('--img_path', type=str, default=None, help='Path to the input image')
     parser.add_argument('--use_fp16', action='store_true', help='Use FP16 for inference')
+    parser.add_argument('--onnx_dir', type=str, default='./onnx_models', help='Directory to save the ONNX model')
 
 
     args = parser.parse_args()
@@ -473,12 +474,16 @@ if __name__ == "__main__":
         model = model.half()
         dummy_input = torch.rand(1, 3, 256, 256).half().to(device)  # if using half
         precision = 'fp16'
+        datatype = 'float16'
     else:
         model = model.float()
         dummy_input = torch.rand(1, 3, 256, 256).float().to(device)  # if using float
         precision = 'fp32'
+        datatype = 'float32'
 
-    onnx_path = os.path.join(parent_dir, f"s3diff_{precision}.onnx")
+    onnx_dir = os.path.join(args.onnx_dir, precision)
+    os.makedirs(onnx_dir, exist_ok=True)
+    onnx_path = os.path.join(onnx_dir, f"s3diff_{precision}.onnx")
     with torch.no_grad():
         torch.onnx.export(
             model,
@@ -497,19 +502,23 @@ if __name__ == "__main__":
         img = cv2.resize(img, (512, 512))
         lr_img = img[128:384, 128:384, :]
         print('lr_img shape:', lr_img.shape)
-        cv2.imwrite("input_lr_image.png", lr_img)
+        cv2.imwrite(f"input_lr_image.png", lr_img)
         lr_img_rgb = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
-        lr_img_tensor = torch.from_numpy(lr_img_rgb).float().permute(2, 0, 1).unsqueeze(0) / 255.0
+        lr_img_tensor = torch.from_numpy(lr_img_rgb) / 255.0
+        lr_img_tensor = lr_img_tensor * 2.0 - 1.0  # Convert to range [-1, 1]
+        lr_img_tensor = lr_img_tensor.to(datatype)
+        lr_img_tensor = lr_img_tensor.permute(2, 0, 1).unsqueeze(0)
         lr_img_tensor = lr_img_tensor.to(device)
 
         hr_img = model(lr_img_tensor)
+
         hr_img = hr_img.detach()
         hr_img = hr_img.squeeze(0).permute(1, 2, 0).cpu().numpy()
         hr_img = ((hr_img * 0.5 + 0.5) * 255.0).clip(0, 255).astype(np.uint8)
         hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)
         print('hr_img shape:', hr_img.shape)
-        cv2.imwrite("output_hr_image.png", hr_img)
+        cv2.imwrite(f"output_hr_image_{precision}.png", hr_img)
         composed_img = np.hstack((lr_img, hr_img))
         # cv2.imshow("Input and Output", composed_img)
-        cv2.imwrite("output_image.png", composed_img)
-        print("Output image saved as output_image.png")
+        cv2.imwrite(f"compose_image_{precision}.png", composed_img)
+        print(f"Output image saved as compose_image_{precision}.png")
