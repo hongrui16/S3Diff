@@ -9,6 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from torch.onnx import OperatorExportTypes
+
+
 from transformers import AutoTokenizer, CLIPTextModel
 from diffusers import AutoencoderKL, UNet2DConditionModel
 from peft import LoraConfig, get_peft_model
@@ -496,6 +499,8 @@ if __name__ == "__main__":
             opset_version=17,
             do_constant_folding=False,
             export_params=True,
+            operator_export_type=OperatorExportTypes.ONNX,  # <=== 加上这一句
+
             # dynamic_axes={"im_lr": {0: "batch"}, "out_im": {0: "batch"}},
         )
 
