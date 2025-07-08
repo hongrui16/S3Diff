@@ -407,7 +407,8 @@ class S3Diff_network(torch.nn.Module):
                     unet_embed = unet_embeds[:, -1]
                 module.de_mod = unet_embed.reshape(-1, self.lora_rank_unet, self.lora_rank_unet)
 
-        lq_latent = self.vae.encode(im_lr).latent_dist.sample() * self.vae.config.scaling_factor
+        # lq_latent = self.vae.encode(im_lr).latent_dist.sample() * self.vae.config.scaling_factor
+        lq_latent = self.vae.encode(im_lr).latent_dist.mean * self.vae.config.scaling_factor
 
         ## add tile function
 
