@@ -45,10 +45,28 @@ def my_lora_fwd(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tenso
 
             if not self.use_dora[active_adapter]:
                 _tmp = lora_A(dropout(x))
+                # if isinstance(lora_A, torch.nn.Conv2d):
+                #     _tmp = torch.einsum('...khw,...kr->...rhw', _tmp, self.de_mod)
+                # elif isinstance(lora_A, torch.nn.Linear):
+                #     _tmp = torch.einsum('...lk,...kr->...lr', _tmp, self.de_mod)
+                # else:
+                #     raise NotImplementedError('only conv and linear are supported yet.')
                 if isinstance(lora_A, torch.nn.Conv2d):
-                    _tmp = torch.einsum('...khw,...kr->...rhw', _tmp, self.de_mod)
+                    # _tmp shape: [B, K, H, W]
+                    B, K, H, W = _tmp.shape
+                    _tmp = _tmp.permute(0, 2, 3, 1)  # [B, H, W, K]
+                    if self.de_mod.dim() == 3 and self.de_mod.shape[0] == B:  # [B, K, R]
+                        _tmp = torch.bmm(_tmp.view(-1, H * W, K), self.de_mod.view(-1, K, -1)).view(B, H, W, -1)
+                    else:  # [K, R] or [1, K, R]
+                        if self.de_mod.dim() == 3:
+                            self.de_mod = self.de_mod.squeeze(0)
+                        _tmp = _tmp @ self.de_mod  # [B, H, W, R]
+                    _tmp = _tmp.permute(0, 3, 1, 2)  # [B, R, H, W]
                 elif isinstance(lora_A, torch.nn.Linear):
-                    _tmp = torch.einsum('...lk,...kr->...lr', _tmp, self.de_mod)
+                    # _tmp shape: [B, L, K]
+                    if self.de_mod.dim() == 3 and self.de_mod.shape[0] == 1:  # [1, K, R]
+                        self.de_mod = self.de_mod.squeeze(0)
+                    _tmp = torch.matmul(_tmp, self.de_mod)  # [B, L, R]
                 else:
                     raise NotImplementedError('only conv and linear are supported yet.')
 
