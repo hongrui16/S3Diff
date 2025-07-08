@@ -442,7 +442,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+    print(f"Using device: {device}")
     export_fp16 = args.use_fp16 or device.type == 'cuda'
 
     ### generate prompt encodings if not exist
