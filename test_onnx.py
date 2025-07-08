@@ -7,7 +7,7 @@ import os
 import argparse
 
 
-def run_inference(onnx_dir, img_path, datatype='fp32'):
+def run_inference(onnx_dir, onnx_path, img_path, precision='fp32'):
     """
     Run inference using the ONNX model.
     
@@ -17,17 +17,26 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
         datatype (str): Data type for the input tensor ('float32' or 'float16').
     """
     # 检查输入数据类型
-    if datatype not in ['fp32', 'fp16']:
+    if precision not in ['fp32', 'fp16']:
         raise ValueError("datatype must be 'fp32' or 'fp16'")
+    
+    if onnx_dir is not None:
+        onnx_path = os.path.join(onnx_dir, precision, f"s3diff_{precision}.onnx")
+    elif onnx_path is not None:
+        onnx_path = onnx_path
+        if 'fp16' in onnx_path:
+            precision = 'fp16'
+        elif 'fp32' in onnx_path:
+            precision = 'fp32'
+    else:
+        raise ValueError("Please provide either onnx_dir or onnx_path.")
 
     # 设置数据类型
-    if datatype == 'fp16':
+    if precision == 'fp16':
         torch.set_default_dtype(torch.float16)
-        precision = 'fp16'
         np_dtype = np.float16
-    elif datatype == 'fp32':
+    elif precision == 'fp32':
         torch.set_default_dtype(torch.float32)
-        precision = 'fp32'
         np_dtype = np.float32
     else:
         raise ValueError("Unsupported datatype. Use 'fp32' or 'fp16'.")
@@ -49,7 +58,6 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
     dummy_input = np.transpose(lr_img_rgb, (0, 3, 1, 2))  # Convert to NCHW format
 
     dummy_input = np.ascontiguousarray(dummy_input)
-    onnx_path = os.path.join(onnx_dir, precision, f"s3diff_{precision}.onnx")
     # 创建 ONNX 推理会话（确保目录下有 s3diff.onnx 和所有碎片文件）
 
     if torch.cuda.is_available():
@@ -81,9 +89,10 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
 if __name__ == "__main__":
     
     argparser = argparse.ArgumentParser(description="Run ONNX inference on an image.")
-    argparser.add_argument("--onnx_dir", type=str, required=True, help="Directory containing ONNX model files.")
+    argparser.add_argument("--onnx_dir", type=str, default=None, help="Directory containing ONNX model files.")
+    argparser.add_argument("--onnx_path", type=str, default=None, help="Name of the ONNX model (without extension).")
     argparser.add_argument("--img_path", type=str, required=True, help="Path to the input image.")
-    argparser.add_argument("--datatype", type=str, default='fp32', choices=['fp32', 'fp16'], help="Data type for the input tensor.")
+    argparser.add_argument("--precision", type=str, default='fp32', choices=['fp32', 'fp16'], help="Data precision for the input tensor.")
     args = argparser.parse_args()   
 
-    run_inference(args.onnx_dir, args.img_path, args.datatype)
+    run_inference(args.onnx_dir, args.onnx_path, args.img_path, args.precision)
