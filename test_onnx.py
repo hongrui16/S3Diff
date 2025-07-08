@@ -32,6 +32,22 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
     else:
         raise ValueError("Unsupported datatype. Use 'fp32' or 'fp16'.")
 
+
+    
+    img = cv2.imread(img_path)
+
+    img = cv2.resize(img, (512, 512))
+    lr_img = img[128:384, 128:384, :]
+    # print('lr_img shape:', lr_img.shape)
+    # cv2.imwrite(f"input_lr_image.png", lr_img)
+    lr_img_rgb = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
+    lr_img_rgb = lr_img_rgb / 255.0  # Convert to range [0, 1]
+    lr_img_rgb = lr_img_rgb.astype(np_dtype)  # Convert to specified dtype
+    lr_img_rgb = lr_img_rgb * 2.0 - 1.0
+    lr_img_rgb = np.expand_dims(lr_img_rgb, axis=0)  # shape: [1, C, H, W]
+    dummy_input = np.transpose(lr_img_rgb, (0, 3, 1, 2))  # Convert to NCHW format
+
+    dummy_input = np.ascontiguousarray(dummy_input)
     onnx_path = os.path.join(onnx_dir, precision, f"s3diff_{precision}.onnx")
     # 创建 ONNX 推理会话（确保目录下有 s3diff.onnx 和所有碎片文件）
     sess = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
@@ -43,18 +59,6 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
     # 准备输入 (例如 [-1,1] normalized, float32)
     # dummy_input = np.random.uniform(-1, 1, size=(1, 3, 256, 256)).astype(np.float32)
 
-    img = cv2.imread(img_path)
-
-    img = cv2.resize(img, (512, 512))
-    lr_img = img[128:384, 128:384, :]
-    # print('lr_img shape:', lr_img.shape)
-    # cv2.imwrite(f"input_lr_image.png", lr_img)
-    lr_img_rgb = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
-    lr_img_rgb = lr_img_rgb / 255.0  # Convert to range [0, 1]
-    lr_img_rgb = lr_img_rgb.astype(np_dtype)  # Convert to specified dtype
-    lr_img_rgb = lr_img_rgb * 2.0 - 1.0
-    dummy_input = lr_img_rgb.unsqueeze(0)  # Add batch dimension
-    dummy_input = np.transpose(dummy_input, (0, 3, 1, 2))  # Convert to NCHW format
 
 
 
