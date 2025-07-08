@@ -443,7 +443,8 @@ if __name__ == "__main__":
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
-    export_fp16 = args.use_fp16 # or device.type == 'cuda'
+    export_fp16 = args.use_fp16 and device.type == 'cuda'
+    print(f"Exporting model in {'FP16' if export_fp16 else 'FP32'} precision")
 
     ### generate prompt encodings if not exist
     if not os.path.exists("prompt_encodings.pt"):
