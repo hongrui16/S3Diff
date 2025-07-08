@@ -422,7 +422,7 @@ class S3Diff_network(torch.nn.Module):
         beta_t = 1.0 - alpha_t
         x_denoised = (lq_latent - beta_t.sqrt() * model_pred) / alpha_t.sqrt()
 
-        output_image = (self.vae.decode(x_denoised / self.vae.config.scaling_factor).sample).clamp(-1, 1)
+        output_image = self.vae.decode(x_denoised / self.vae.config.scaling_factor).sample
 
         return output_image
 
@@ -515,6 +515,7 @@ if __name__ == "__main__":
         hr_img = model(lr_img_tensor)
 
         hr_img = hr_img.detach()
+        hr_img.clamp_(-1.0, 1.0)
         hr_img = hr_img.squeeze(0).permute(1, 2, 0).cpu().numpy()
         hr_img = ((hr_img * 0.5 + 0.5) * 255.0).clip(0, 255).astype(np.uint8)
         hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)

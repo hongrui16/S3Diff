@@ -70,6 +70,7 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
 
     # 处理输出
     hr_img = output.squeeze(0).transpose(1, 2, 0)
+    hr_img = hr_img.clip(-1.0, 1.0)  # 确保输出在 [-1, 1] 范围内
     hr_img = ((hr_img * 0.5 + 0.5) * 255.0).clip(0, 255).astype(np.uint8)
     hr_img = cv2.cvtColor(hr_img, cv2.COLOR_RGB2BGR)
     print('hr_img shape:', hr_img.shape)
