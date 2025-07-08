@@ -56,7 +56,8 @@ def my_lora_fwd(self, x: torch.Tensor, *args: Any, **kwargs: Any) -> torch.Tenso
                     B, K, H, W = _tmp.shape
                     _tmp = _tmp.permute(0, 2, 3, 1)  # [B, H, W, K]
                     if self.de_mod.dim() == 3 and self.de_mod.shape[0] == B:  # [B, K, R]
-                        _tmp = torch.bmm(_tmp.view(-1, H * W, K), self.de_mod.view(-1, K, -1)).view(B, H, W, -1)
+                        R = self.de_mod.shape[-1]
+                        _tmp = torch.bmm(_tmp.view(-1, H * W, K), self.de_mod.view(B, K, R)).view(B, H, W, R)
                     else:  # [K, R] or [1, K, R]
                         if self.de_mod.dim() == 3:
                             self.de_mod = self.de_mod.squeeze(0)
