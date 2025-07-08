@@ -474,12 +474,12 @@ if __name__ == "__main__":
         model = model.half()
         dummy_input = torch.rand(1, 3, 256, 256).half().to(device)  # if using half
         precision = 'fp16'
-        datatype = 'float16'
+        tensor_type = torch.float16
     else:
         model = model.float()
         dummy_input = torch.rand(1, 3, 256, 256).float().to(device)  # if using float
         precision = 'fp32'
-        datatype = 'float32'
+        tensor_type = torch.float32
 
     onnx_dir = os.path.join(args.onnx_dir, precision)
     os.makedirs(onnx_dir, exist_ok=True)
@@ -506,7 +506,7 @@ if __name__ == "__main__":
         lr_img_rgb = cv2.cvtColor(lr_img, cv2.COLOR_BGR2RGB)
         lr_img_tensor = torch.from_numpy(lr_img_rgb) / 255.0
         lr_img_tensor = lr_img_tensor * 2.0 - 1.0  # Convert to range [-1, 1]
-        lr_img_tensor = lr_img_tensor.to(datatype)
+        lr_img_tensor = lr_img_tensor.to(dtype=tensor_type)
         lr_img_tensor = lr_img_tensor.permute(2, 0, 1).unsqueeze(0)
         lr_img_tensor = lr_img_tensor.to(device)
 
