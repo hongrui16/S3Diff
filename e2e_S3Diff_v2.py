@@ -492,7 +492,7 @@ if __name__ == "__main__":
             input_names=["im_lr"],
             output_names=["out_im"],
             opset_version=17,
-            do_constant_folding=True,
+            do_constant_folding=False,
             # dynamic_axes={"im_lr": {0: "batch"}, "out_im": {0: "batch"}},
         )
 
