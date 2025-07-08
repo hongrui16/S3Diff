@@ -17,7 +17,7 @@ def run_inference(onnx_dir, img_path, datatype='fp32'):
         datatype (str): Data type for the input tensor ('float32' or 'float16').
     """
     # 检查输入数据类型
-    if datatype not in ['float32', 'float16']:
+    if datatype not in ['fp32', 'fp16']:
         raise ValueError("datatype must be 'fp32' or 'fp16'")
 
     # 设置数据类型
