@@ -495,6 +495,8 @@ if __name__ == "__main__":
             output_names=["out_im"],
             opset_version=17,
             do_constant_folding=False,
+            export_params=True,
+            keep_initializers=True,
             # dynamic_axes={"im_lr": {0: "batch"}, "out_im": {0: "batch"}},
         )
 
